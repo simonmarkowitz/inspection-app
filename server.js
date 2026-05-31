@@ -4,6 +4,7 @@ const sgMail = require('@sendgrid/mail');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { google } = require('googleapis');
 require('dotenv').config();
 
 const app = express();
@@ -25,6 +26,54 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+async function uploadToDrive(filePath, filename, unit) {
+  try {
+    const auth = new google.auth.GoogleAuth({
+      keyFile: path.join(__dirname, 'credentials.json'),
+      scopes: ['https://www.googleapis.com/auth/drive.file']
+    });
+    const drive = google.drive({ version: 'v3', auth });
+
+    // Find or create a subfolder for the unit
+    const folderRes = await drive.files.list({
+      q: `name='Unit ${unit}' and mimeType='application/vnd.google-apps.folder' and '${process.env.DRIVE_FOLDER_ID}' in parents and trashed=false`,
+      fields: 'files(id, name)'
+    });
+
+    let unitFolderId;
+    if (folderRes.data.files.length > 0) {
+      unitFolderId = folderRes.data.files[0].id;
+    } else {
+      const newFolder = await drive.files.create({
+        requestBody: {
+          name: `Unit ${unit}`,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [process.env.DRIVE_FOLDER_ID]
+        },
+        fields: 'id'
+      });
+      unitFolderId = newFolder.data.id;
+    }
+
+    const fileRes = await drive.files.create({
+      requestBody: {
+        name: filename,
+        parents: [unitFolderId]
+      },
+      media: {
+        mimeType: 'image/jpeg',
+        body: fs.createReadStream(filePath)
+      },
+      fields: 'id, webViewLink'
+    });
+
+    return fileRes.data.webViewLink;
+  } catch (err) {
+    console.error('Drive upload error:', err);
+    return null;
+  }
+}
+
 app.post('/upload', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   res.json({ filename: req.file.filename, path: req.file.path });
@@ -40,14 +89,13 @@ app.post('/send-report', async (req, res) => {
     <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
     <h3>Damages</h3>
     <table border="1" cellpadding="6" cellspacing="0">
-    <tr><th>Room</th><th>Damage</th><th>Charge</th><th>Notes</th></tr>`;
+    <tr><th>Room</th><th>Damage</th><th>Charge</th><th>Notes</th><th>Photo</th></tr>`;
 
   let total = 0;
   const attachments = [];
 
   for (const d of damages) {
-    html += `<tr><td>${d.room}</td><td>${d.damage}</td><td>$${d.price}</td><td>${d.notes || ''}</td></tr>`;
-    total += parseFloat(d.price) || 0;
+    let driveLink = '';
     if (d.filename) {
       const filePath = path.join(uploadPath, d.filename);
       if (fs.existsSync(filePath)) {
@@ -58,11 +106,15 @@ app.post('/send-report', async (req, res) => {
           type: 'image/jpeg',
           disposition: 'attachment'
         });
+        const link = await uploadToDrive(filePath, d.filename, unit);
+        if (link) driveLink = `<a href="${link}">View Photo</a>`;
       }
     }
+    html += `<tr><td>${d.room}</td><td>${d.damage}</td><td>$${d.price}</td><td>${d.notes || ''}</td><td>${driveLink}</td></tr>`;
+    total += parseFloat(d.price) || 0;
   }
 
-  html += `<tr><td colspan="2"><b>Total</b></td><td><b>$${total.toFixed(2)}</b></td><td></td></tr></table>`;
+  html += `<tr><td colspan="3"><b>Total</b></td><td><b>$${total.toFixed(2)}</b></td><td></td></tr></table>`;
 
   try {
     await sgMail.send({
@@ -84,7 +136,7 @@ app.post('/send-report', async (req, res) => {
         <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
         <p><b>Damages logged:</b> ${damages.length}</p>
         <p><b>Total charges:</b> $${total.toFixed(2)}</p>
-        <p>The full report and photos have been sent to the office.</p>`
+        <p>The full report and photos have been sent to the office and uploaded to Google Drive.</p>`
     });
 
     res.json({ success: true });
@@ -96,5 +148,4 @@ app.post('/send-report', async (req, res) => {
 
 app.listen(process.env.PORT || 3001, () => {
   console.log(`✅ Inspection server running on http://localhost:${process.env.PORT || 3001}`);
-  console.log(`   Upload folder: ${uploadPath}`);
-});
+  console.log(`
