@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apartment Inspection</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+  .header { background: #1a56db; color: white; padding: 16px 24px; font-size: 22px; font-weight: bold; }
+  .container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+  .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  h2 { font-size: 18px; margin-bottom: 16px; color: #1a56db; }
+  label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; margin-top: 12px; }
+  input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+  textarea { height: 70px; resize: vertical; }
+  .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold; }
+  .btn-primary { background: #1a56db; color: white; width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
+  .btn-add { background: #e8f0fe; color: #1a56db; margin-top: 12px; }
+  .btn-remove { background: #fee2e2; color: #dc2626; float: right; padding: 6px 12px; font-size: 12px; }
+  .damage-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 12px; background: #fafafa; }
+  .room-section { margin-bottom: 8px; }
+  .total { font-size: 20px; font-weight: bold; color: #1a56db; text-align: right; margin-top: 12px; }
+  .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-top: 8px; }
+  .success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
+  .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="header">🏠 Apartment Inspection</div>
+<div class="container" id="app">
+
+  <div class="card" id="info-card">
+    <h2>Inspection Details</h2>
+    <label>Unit Number</label>
+    <input type="text" id="unit" placeholder="e.g. 4B">
+    <label>Tenant Name</label>
+    <input type="text" id="tenant" placeholder="Former tenant's full name">
+    <label>Inspector Name</label>
+    <input type="text" id="inspector" placeholder="Your name">
+    <label>Office Email (report will be sent here)</label>
+    <input type="email" id="email" placeholder="office@example.com">
+  </div>
+
+  <div class="card">
+    <h2>Damages</h2>
+    <div id="damages-list"></div>
+    <button class="btn btn-add" onclick="addDamage()">+ Add Damage</button>
+    <div class="total" id="total-display">Total: $0.00</div>
+  </div>
+
+  <button class="btn btn-primary" onclick="submitReport()" id="submit-btn">Send Report</button>
+  <div id="result"></div>
+</div>
+
+<script>
+const ROOMS = [
+  'Entrance',
+  'Entrance Hallway Closet',
+  'Bedroom 1',
+  'Bedroom 1 Closet',
+  'Bedroom 2',
+  'Bedroom 2 Closet',
+  'Bedroom 3',
+  'Bedroom 3 Closet',
+  'Closet by Bathroom',
+  'Bathroom Closet',
+  'Bathroom',
+  'Kitchen',
+  'Living Room',
+  'Patio'
+];
+
+const DAMAGES = [
+  { name: 'Hole in wall (small)', price: 75 },
+  { name: 'Hole in wall (large)', price: 150 },
+  { name: 'Keys not returned - replace apartment locks', price: 125 },
+{ name: 'Keys not returned - replace mailbox lock', price: 125 },
+{ name: 'Electronic key fob / building entrance key not returned', price: 65 },
+{ name: 'Missing / Damaged kitchen drawer or cabinet door', price: 125 },
+{ name: 'Missing kitchen sink strainer', price: 30 },
+{ name: 'Repaint room back to standard color', price: 200 },
+  { name: 'Broken door', price: 200 },
+  { name: 'Broken window', price: 250 },
+  { name: 'Missing/broken blinds', price: 85 },
+  { name: 'Damaged flooring (per area)', price: 300 },
+  { name: 'Stained carpet (per room)', price: 150 },
+  { name: 'Carpet replacement (per room)', price: 400 },
+  { name: 'Broken cabinet door', price: 120 },
+  { name: 'Missing cabinet hardware', price: 25 },
+  { name: 'Damaged countertop', price: 350 },
+  { name: 'Broken light fixture', price: 80 },
+  { name: 'Missing light fixture', price: 60 },
+  { name: 'Damaged closet shelf', price: 90 },
+  { name: 'Broken towel bar', price: 45 },
+  { name: 'Damaged toilet seat', price: 55 },
+  { name: 'Broken mirror', price: 100 },
+  { name: 'Excessive cleaning required', price: 200 },
+  { name: 'Trash removal', price: 100 },
+  { name: 'Other (see notes)', price: 0 }
+];
+
+let damageCount = 0;
+
+function addDamage() {
+  damageCount++;
+  const id = damageCount;
+  const roomOptions = ROOMS.map(r => `<option value="${r}">${r}</option>`).join('');
+  const damageOptions = DAMAGES.map(d => `<option value="${d.name}" data-price="${d.price}">${d.name} — $${d.price}</option>`).join('');
+
+  const div = document.createElement('div');
+  div.className = 'damage-item';
+  div.id = `damage-${id}`;
+  div.innerHTML = `
+    <button class="btn btn-remove" onclick="removeDamage(${id})">✕ Remove</button>
+    <label>Room</label>
+    <select id="room-${id}">${roomOptions}</select>
+    <label>Damage Type</label>
+    <select id="type-${id}" onchange="updatePrice(${id})">${damageOptions}</select>
+    <label>Charge ($)</label>
+    <input type="number" id="price-${id}" value="${DAMAGES[0].price}" onchange="updateTotal()">
+    <label>Photo</label>
+    <input type="file" id="photo-${id}" accept="image/*" capture="environment" onchange="previewPhoto(${id})">
+    <div id="preview-${id}"></div>
+    <label>Notes (optional)</label>
+    <textarea id="notes-${id}" placeholder="Describe the damage..."></textarea>
+  `;
+  document.getElementById('damages-list').appendChild(div);
+  updateTotal();
+}
+
+function removeDamage(id) {
+  document.getElementById(`damage-${id}`).remove();
+  updateTotal();
+}
+
+function updatePrice(id) {
+  const sel = document.getElementById(`type-${id}`);
+  const price = sel.options[sel.selectedIndex].dataset.price;
+  document.getElementById(`price-${id}`).value = price;
+  updateTotal();
+}
+
+function updateTotal() {
+  let total = 0;
+  document.querySelectorAll('[id^="price-"]').forEach(el => {
+    total += parseFloat(el.value) || 0;
+  });
+  document.getElementById('total-display').textContent = `Total: $${total.toFixed(2)}`;
+}
+
+function previewPhoto(id) {
+  const file = document.getElementById(`photo-${id}`).files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById(`preview-${id}`).innerHTML = `<img src="${e.target.result}" class="photo-preview">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitReport() {
+  const unit = document.getElementById('unit').value.trim();
+  const tenant = document.getElementById('tenant').value.trim();
+  const inspector = document.getElementById('inspector').value.trim();
+  const email = document.getElementById('email').value.trim();
+
+  if (!unit || !tenant || !inspector || !email) {
+    document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all inspection details.</p>';
+    return;
+  }
+
+  const items = document.querySelectorAll('[id^="damage-"]');
+  if (items.length === 0) {
+    document.getElementById('result').innerHTML = '<p class="error-msg">Please add at least one damage item.</p>';
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<span class="spinner"></span> Sending...';
+  btn.disabled = true;
+
+  const damages = [];
+  for (const item of items) {
+    const id = item.id.split('-')[1];
+    const photoFile = document.getElementById(`photo-${id}`).files[0];
+    let filename = null;
+
+    if (photoFile) {
+      const formData = new FormData();
+      formData.append('photo', photoFile);
+      const res = await fetch('/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      filename = data.filename;
+    }
+
+    damages.push({
+      room: document.getElementById(`room-${id}`).value,
+      damage: document.getElementById(`type-${id}`).value,
+      price: document.getElementById(`price-${id}`).value,
+      notes: document.getElementById(`notes-${id}`).value,
+      filename
+    });
+  }
+
+  const res = await fetch('/send-report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ unit, tenant, inspector, email, damages })
+  });
+
+  const data = await res.json();
+  btn.innerHTML = 'Send Report';
+  btn.disabled = false;
+
+  if (data.success) {
+    document.getElementById('app').innerHTML = `
+      <div class="success">
+        ✅ Report sent successfully!<br><br>
+        <span style="font-size:15px;font-weight:normal">Unit ${unit} — ${damages.length} damage(s) logged</span><br><br>
+        <button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button>
+      </div>`;
+  } else {
+    document.getElementById('result').innerHTML = `<p class="error-msg">Error: ${data.error}</p>`;
+  }
+}
+</script>
+</body>
+</html>
