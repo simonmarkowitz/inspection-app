@@ -35,9 +35,10 @@ async function uploadToDrive(filePath, filename, unit) {
     const auth = new google.auth.GoogleAuth({
       credentials,
       scopes: ['https://www.googleapis.com/auth/drive.file']
-    });    const drive = google.drive({ version: 'v3', auth });
+    });
 
-    // Find or create a subfolder for the unit
+    const drive = google.drive({ version: 'v3', auth });
+
     const folderRes = await drive.files.list({
       q: `name='Unit ${unit}' and mimeType='application/vnd.google-apps.folder' and '${process.env.DRIVE_FOLDER_ID}' in parents and trashed=false`,
       fields: 'files(id, name)'
@@ -49,7 +50,7 @@ async function uploadToDrive(filePath, filename, unit) {
     } else {
       const newFolder = await drive.files.create({
         requestBody: {
-          name: `Unit ${unit}`,
+          name: 'Unit ' + unit,
           mimeType: 'application/vnd.google-apps.folder',
           parents: [process.env.DRIVE_FOLDER_ID]
         },
@@ -72,7 +73,7 @@ async function uploadToDrive(filePath, filename, unit) {
 
     return fileRes.data.webViewLink;
   } catch (err) {
-    console.error('Drive upload error:', err);
+    console.error('Drive upload error:', err.message);
     return null;
   }
 }
@@ -85,14 +86,14 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 app.post('/send-report', async (req, res) => {
   const { unit, tenant, inspector, inspectorEmail, officeEmail, damages } = req.body;
 
-  let html = `<h2>Inspection Report</h2>
-    <p><b>Unit:</b> ${unit}</p>
-    <p><b>Tenant:</b> ${tenant}</p>
-    <p><b>Inspector:</b> ${inspector}</p>
-    <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
-    <h3>Damages</h3>
-    <table border="1" cellpadding="6" cellspacing="0">
-    <tr><th>Room</th><th>Damage</th><th>Charge</th><th>Notes</th><th>Photo</th></tr>`;
+  let html = '<h2>Inspection Report</h2>'
+    + '<p><b>Unit:</b> ' + unit + '</p>'
+    + '<p><b>Tenant:</b> ' + tenant + '</p>'
+    + '<p><b>Inspector:</b> ' + inspector + '</p>'
+    + '<p><b>Date:</b> ' + new Date().toLocaleDateString() + '</p>'
+    + '<h3>Damages</h3>'
+    + '<table border="1" cellpadding="6" cellspacing="0">'
+    + '<tr><th>Room</th><th>Damage</th><th>Charge</th><th>Notes</th><th>Photo</th></tr>';
 
   let total = 0;
   const attachments = [];
@@ -110,20 +111,20 @@ app.post('/send-report', async (req, res) => {
           disposition: 'attachment'
         });
         const link = await uploadToDrive(filePath, d.filename, unit);
-        if (link) driveLink = `<a href="${link}">View Photo</a>`;
+        if (link) driveLink = '<a href="' + link + '">View Photo</a>';
       }
     }
-    html += `<tr><td>${d.room}</td><td>${d.damage}</td><td>$${d.price}</td><td>${d.notes || ''}</td><td>${driveLink}</td></tr>`;
+    html += '<tr><td>' + d.room + '</td><td>' + d.damage + '</td><td>$' + d.price + '</td><td>' + (d.notes || '') + '</td><td>' + driveLink + '</td></tr>';
     total += parseFloat(d.price) || 0;
   }
 
-  html += `<tr><td colspan="3"><b>Total</b></td><td><b>$${total.toFixed(2)}</b></td><td></td></tr></table>`;
+  html += '<tr><td colspan="3"><b>Total</b></td><td><b>$' + total.toFixed(2) + '</b></td><td></td></tr></table>';
 
   try {
     await sgMail.send({
       from: process.env.EMAIL_FROM,
       to: officeEmail,
-      subject: `Inspection Report — Unit ${unit}`,
+      subject: 'Inspection Report - Unit ' + unit,
       html,
       attachments
     });
@@ -131,24 +132,11 @@ app.post('/send-report', async (req, res) => {
     await sgMail.send({
       from: process.env.EMAIL_FROM,
       to: inspectorEmail,
-      subject: `✅ Confirmation — Report sent for Unit ${unit}`,
-      html: `<h2>Report Confirmation</h2>
-        <p>Hi ${inspector},</p>
-        <p>Your inspection report for <b>Unit ${unit}</b> has been successfully submitted.</p>
-        <p><b>Tenant:</b> ${tenant}</p>
-        <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
-        <p><b>Damages logged:</b> ${damages.length}</p>
-        <p><b>Total charges:</b> $${total.toFixed(2)}</p>
-        <p>The full report and photos have been sent to the office and uploaded to Google Drive.</p>`
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err.response ? err.response.body : err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.listen(process.env.PORT || 3001, () => {
-  console.log(`✅ Inspection server running on http://localhost:${process.env.PORT || 3001}`);
-  console.log(`
+      subject: 'Confirmation - Report sent for Unit ' + unit,
+      html: '<h2>Report Confirmation</h2>'
+        + '<p>Hi ' + inspector + ',</p>'
+        + '<p>Your inspection report for <b>Unit ' + unit + '</b> has been successfully submitted.</p>'
+        + '<p><b>Tenant:</b> ' + tenant + '</p>'
+        + '<p><b>Date:</b> ' + new Date().toLocaleDateString() + '</p>'
+        + '<p><b>Damages logged:</b> ' + damages.length + '</p>'
+        + '<p><b>Total c
