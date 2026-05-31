@@ -18,13 +18,13 @@ const upload = multer({ storage });
 async function uploadToDrive(filePath, filename, unit) {
   try {
     const credentials = process.env.GOOGLE_CREDENTIALS ? JSON.parse(process.env.GOOGLE_CREDENTIALS) : JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
-    const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/drive.file'] });
+    const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/drive'] });
     const drive = google.drive({ version: 'v3', auth });
-    const folderRes = await drive.files.list({ q: "name='Unit " + unit + "' and mimeType='application/vnd.google-apps.folder' and '" + process.env.DRIVE_FOLDER_ID + "' in parents and trashed=false", fields: 'files(id, name)' });
+    const folderRes = await drive.files.list({ q: "name='Unit " + unit + "' and mimeType='application/vnd.google-apps.folder' and '" + process.env.DRIVE_FOLDER_ID + "' in parents and trashed=false", fields: 'files(id, name)', supportsAllDrives: true, includeItemsFromAllDrives: true });
     let unitFolderId;
     if (folderRes.data.files.length > 0) { unitFolderId = folderRes.data.files[0].id; }
-    else { const newFolder = await drive.files.create({ requestBody: { name: 'Unit ' + unit, mimeType: 'application/vnd.google-apps.folder', parents: [process.env.DRIVE_FOLDER_ID] }, fields: 'id' }); unitFolderId = newFolder.data.id; }
-    const fileRes = await drive.files.create({ requestBody: { name: filename, parents: [unitFolderId] }, media: { mimeType: 'image/jpeg', body: fs.createReadStream(filePath) }, fields: 'id, webViewLink' });
+    else { const newFolder = await drive.files.create({ requestBody: { name: 'Unit ' + unit, mimeType: 'application/vnd.google-apps.folder', parents: [process.env.DRIVE_FOLDER_ID] }, fields: 'id', supportsAllDrives: true }); unitFolderId = newFolder.data.id; }
+    const fileRes = await drive.files.create({ requestBody: { name: filename, parents: [unitFolderId] }, media: { mimeType: 'image/jpeg', body: fs.createReadStream(filePath) }, fields: 'id, webViewLink', supportsAllDrives: true });
     return fileRes.data.webViewLink;
   } catch (err) { console.error('Drive upload error:', err.message); return null; }
 }
