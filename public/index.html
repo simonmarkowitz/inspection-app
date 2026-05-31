@@ -7,7 +7,9 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
-  .header { background: #1a56db; color: white; padding: 16px 24px; font-size: 22px; font-weight: bold; }
+  .header { background: #1a56db; color: white; padding: 16px 24px; font-size: 22px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+  .header-btns { display: flex; gap: 10px; }
+  .btn-settings { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
   .container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
   .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   h2 { font-size: 18px; margin-bottom: 16px; color: #1a56db; }
@@ -18,21 +20,41 @@
   .btn-primary { background: #1a56db; color: white; width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
   .btn-add { background: #e8f0fe; color: #1a56db; margin-top: 12px; }
   .btn-remove { background: #fee2e2; color: #dc2626; float: right; padding: 6px 12px; font-size: 12px; }
+  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-success { background: #d1fae5; color: #065f46; }
   .damage-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 12px; background: #fafafa; }
-  .room-section { margin-bottom: 8px; }
   .total { font-size: 20px; font-weight: bold; color: #1a56db; text-align: right; margin-top: 12px; }
   .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-top: 8px; }
   .success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
   .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
   .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .page { display: none; }
+  .page.active { display: block; }
+  .settings-item { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fafafa; }
+  .settings-item input { margin: 0; }
+  .settings-item input[type="text"] { flex: 2; }
+  .settings-item input[type="number"] { flex: 1; }
+  .settings-item button { flex-shrink: 0; padding: 8px 12px; font-size: 13px; }
+  .add-damage-row { display: flex; gap: 10px; margin-top: 12px; }
+  .add-damage-row input[type="text"] { flex: 2; }
+  .add-damage-row input[type="number"] { flex: 1; }
+  .add-damage-row button { flex-shrink: 0; }
 </style>
 </head>
 <body>
-<div class="header">🏠 Apartment Inspection</div>
-<div class="container" id="app">
+<div class="header">
+  🏠 Apartment Inspection
+  <div class="header-btns">
+    <button class="btn-settings" onclick="showPage('inspection')">📋 Inspection</button>
+    <button class="btn-settings" onclick="showPage('settings')">⚙️ Settings</button>
+  </div>
+</div>
 
-  <div class="card" id="info-card">
+<!-- INSPECTION PAGE -->
+<div class="page active" id="page-inspection">
+<div class="container" id="app">
+  <div class="card">
     <h2>Inspection Details</h2>
     <label>Unit Number</label>
     <input type="text" id="unit" placeholder="e.g. 4B">
@@ -40,8 +62,10 @@
     <input type="text" id="tenant" placeholder="Former tenant's full name">
     <label>Inspector Name</label>
     <input type="text" id="inspector" placeholder="Your name">
+    <label>Inspector Email (confirmation will be sent here)</label>
+    <input type="email" id="inspector-email" placeholder="inspector@example.com">
     <label>Office Email (report will be sent here)</label>
-    <input type="email" id="email" placeholder="office@example.com">
+    <input type="email" id="office-email" placeholder="office@example.com">
   </div>
 
   <div class="card">
@@ -54,34 +78,36 @@
   <button class="btn btn-primary" onclick="submitReport()" id="submit-btn">Send Report</button>
   <div id="result"></div>
 </div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+<div class="container">
+  <div class="card">
+    <h2>⚙️ Damage Types & Prices</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add damage types and their default charges.</p>
+    <div id="settings-list"></div>
+    <div class="add-damage-row">
+      <input type="text" id="new-damage-name" placeholder="New damage type">
+      <input type="number" id="new-damage-price" placeholder="Price">
+      <button class="btn btn-add" onclick="addNewDamage()">+ Add</button>
+    </div>
+    <button class="btn btn-primary" onclick="saveDamages()">💾 Save Changes</button>
+    <div id="settings-result"></div>
+  </div>
+</div>
+</div>
 
 <script>
 const ROOMS = [
-  'Entrance',
-  'Entrance Hallway Closet',
-  'Bedroom 1',
-  'Bedroom 1 Closet',
-  'Bedroom 2',
-  'Bedroom 2 Closet',
-  'Bedroom 3',
-  'Bedroom 3 Closet',
-  'Closet by Bathroom',
-  'Bathroom Closet',
-  'Bathroom',
-  'Kitchen',
-  'Living Room',
-  'Patio'
+  'Entrance','Entrance Hallway Closet','Bedroom 1','Bedroom 1 Closet',
+  'Bedroom 2','Bedroom 2 Closet','Bedroom 3','Bedroom 3 Closet',
+  'Closet by Bathroom','Bathroom Closet','Bathroom','Kitchen','Living Room','Patio'
 ];
 
-const DAMAGES = [
+const DEFAULT_DAMAGES = [
   { name: 'Hole in wall (small)', price: 75 },
   { name: 'Hole in wall (large)', price: 150 },
-  { name: 'Keys not returned - replace apartment locks', price: 125 },
-{ name: 'Keys not returned - replace mailbox lock', price: 125 },
-{ name: 'Electronic key fob / building entrance key not returned', price: 65 },
-{ name: 'Missing / Damaged kitchen drawer or cabinet door', price: 125 },
-{ name: 'Missing kitchen sink strainer', price: 30 },
-{ name: 'Repaint room back to standard color', price: 200 },
   { name: 'Broken door', price: 200 },
   { name: 'Broken window', price: 250 },
   { name: 'Missing/broken blinds', price: 85 },
@@ -102,7 +128,66 @@ const DAMAGES = [
   { name: 'Other (see notes)', price: 0 }
 ];
 
+function loadDamages() {
+  const stored = localStorage.getItem('damages');
+  return stored ? JSON.parse(stored) : DEFAULT_DAMAGES;
+}
+
+function saveDamagesToStorage(damages) {
+  localStorage.setItem('damages', JSON.stringify(damages));
+}
+
+let DAMAGES = loadDamages();
 let damageCount = 0;
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'settings') renderSettings();
+}
+
+function renderSettings() {
+  const list = document.getElementById('settings-list');
+  list.innerHTML = '';
+  DAMAGES.forEach((d, i) => {
+    const div = document.createElement('div');
+    div.className = 'settings-item';
+    div.innerHTML = `
+      <input type="text" value="${d.name}" id="sname-${i}" placeholder="Damage name">
+      <input type="number" value="${d.price}" id="sprice-${i}" placeholder="Price">
+      <button class="btn btn-danger" onclick="deleteDamage(${i})">✕</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function deleteDamage(i) {
+  DAMAGES.splice(i, 1);
+  renderSettings();
+}
+
+function addNewDamage() {
+  const name = document.getElementById('new-damage-name').value.trim();
+  const price = parseFloat(document.getElementById('new-damage-price').value) || 0;
+  if (!name) { alert('Please enter a damage name'); return; }
+  DAMAGES.push({ name, price });
+  document.getElementById('new-damage-name').value = '';
+  document.getElementById('new-damage-price').value = '';
+  renderSettings();
+}
+
+function saveDamages() {
+  const updated = [];
+  DAMAGES.forEach((d, i) => {
+    const name = document.getElementById(`sname-${i}`).value.trim();
+    const price = parseFloat(document.getElementById(`sprice-${i}`).value) || 0;
+    if (name) updated.push({ name, price });
+  });
+  DAMAGES = updated;
+  saveDamagesToStorage(DAMAGES);
+  document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Changes saved!</p>';
+  setTimeout(() => document.getElementById('settings-result').innerHTML = '', 2000);
+}
 
 function addDamage() {
   damageCount++;
@@ -120,7 +205,7 @@ function addDamage() {
     <label>Damage Type</label>
     <select id="type-${id}" onchange="updatePrice(${id})">${damageOptions}</select>
     <label>Charge ($)</label>
-    <input type="number" id="price-${id}" value="${DAMAGES[0].price}" onchange="updateTotal()">
+    <input type="number" id="price-${id}" value="${DAMAGES[0] ? DAMAGES[0].price : 0}" onchange="updateTotal()">
     <label>Photo</label>
     <input type="file" id="photo-${id}" accept="image/*" capture="environment" onchange="previewPhoto(${id})">
     <div id="preview-${id}"></div>
@@ -165,9 +250,10 @@ async function submitReport() {
   const unit = document.getElementById('unit').value.trim();
   const tenant = document.getElementById('tenant').value.trim();
   const inspector = document.getElementById('inspector').value.trim();
-  const email = document.getElementById('email').value.trim();
+  const inspectorEmail = document.getElementById('inspector-email').value.trim();
+  const officeEmail = document.getElementById('office-email').value.trim();
 
-  if (!unit || !tenant || !inspector || !email) {
+  if (!unit || !tenant || !inspector || !inspectorEmail || !officeEmail) {
     document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all inspection details.</p>';
     return;
   }
@@ -208,7 +294,7 @@ async function submitReport() {
   const res = await fetch('/send-report', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ unit, tenant, inspector, email, damages })
+    body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages })
   });
 
   const data = await res.json();
@@ -219,7 +305,7 @@ async function submitReport() {
     document.getElementById('app').innerHTML = `
       <div class="success">
         ✅ Report sent successfully!<br><br>
-        <span style="font-size:15px;font-weight:normal">Unit ${unit} — ${damages.length} damage(s) logged</span><br><br>
+        <span style="font-size:15px;font-weight:normal">Unit ${unit} — ${damages.length} damage(s) logged<br>Confirmation sent to ${inspectorEmail}</span><br><br>
         <button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button>
       </div>`;
   } else {

@@ -29,7 +29,7 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 });
 
 app.post('/send-report', async (req, res) => {
-  const { unit, tenant, inspector, email, damages } = req.body;
+  const { unit, tenant, inspector, inspectorEmail, officeEmail, damages } = req.body;
 
   let html = `<h2>Inspection Report</h2>
     <p><b>Unit:</b> ${unit}</p>
@@ -63,11 +63,26 @@ app.post('/send-report', async (req, res) => {
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
-      to: email,
+      to: officeEmail,
       subject: `Inspection Report — Unit ${unit}`,
       html,
       attachments
     });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: inspectorEmail,
+      subject: `✅ Confirmation — Report sent for Unit ${unit}`,
+      html: `<h2>Report Confirmation</h2>
+        <p>Hi ${inspector},</p>
+        <p>Your inspection report for <b>Unit ${unit}</b> has been successfully submitted.</p>
+        <p><b>Tenant:</b> ${tenant}</p>
+        <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
+        <p><b>Damages logged:</b> ${damages.length}</p>
+        <p><b>Total charges:</b> $${total.toFixed(2)}</p>
+        <p>The full report and photos have been sent to the office.</p>`
+    });
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
