@@ -28,11 +28,14 @@ const upload = multer({ storage });
 
 async function uploadToDrive(filePath, filename, unit) {
   try {
+    const credentials = process.env.GOOGLE_CREDENTIALS
+      ? JSON.parse(process.env.GOOGLE_CREDENTIALS)
+      : JSON.parse(fs.readFileSync(path.join(__dirname, 'credentials.json')));
+
     const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, 'credentials.json'),
+      credentials,
       scopes: ['https://www.googleapis.com/auth/drive.file']
-    });
-    const drive = google.drive({ version: 'v3', auth });
+    });    const drive = google.drive({ version: 'v3', auth });
 
     // Find or create a subfolder for the unit
     const folderRes = await drive.files.list({
