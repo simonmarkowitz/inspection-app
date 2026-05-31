@@ -87,6 +87,11 @@
     <h2>⚙️ Damage Types & Prices</h2>
     <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add damage types and their default charges.</p>
     <div id="settings-list"></div>
+<div style="margin-bottom:16px">
+  <label style="font-weight:bold;font-size:13px">Import from Excel</label>
+  <p style="font-size:12px;color:#666;margin-bottom:8px">Excel file must have damage name in column A and price in column B.</p>
+  <input type="file" id="excel-upload" accept=".xlsx,.xls" onchange="importExcel(this)">
+</div>
     <div class="add-damage-row">
       <input type="text" id="new-damage-name" placeholder="New damage type">
       <input type="number" id="new-damage-price" placeholder="Price">
@@ -98,6 +103,7 @@
 </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const ROOMS = [
   'Entrance','Entrance Hallway Closet','Bedroom 1','Bedroom 1 Closet',
@@ -132,7 +138,38 @@ function loadDamages() {
   const stored = localStorage.getItem('damages');
   return stored ? JSON.parse(stored) : DEFAULT_DAMAGES;
 }
-
+function importExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const imported = [];
+      for (const row of rows) {
+        const name = row[0] ? String(row[0]).trim() : '';
+        const price = parseFloat(row[1]) || 0;
+        if (name && name.toLowerCase() !== 'damage' && name.toLowerCase() !== 'name') {
+          imported.push({ name, price });
+        }
+      }
+      if (imported.length === 0) {
+        alert('No data found in the file. Make sure column A has damage names and column B has prices.');
+        return;
+      }
+      DAMAGES = imported;
+      renderSettings();
+      document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Imported ' + imported.length + ' items from Excel!</p>';
+      setTimeout(() => document.getElementById('settings-result').innerHTML = '', 3000);
+    } catch (err) {
+      alert('Error reading file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 function saveDamagesToStorage(damages) {
   localStorage.setItem('damages', JSON.stringify(damages));
 }
