@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -10,6 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
@@ -36,7 +38,8 @@ app.post('/send-report', async (req, res) => {
     <p><b>Tenant:</b> ${tenant}</p>
     <p><b>Inspector:</b> ${inspector}</p>
     <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
-    <h3>Damages</h3><table border="1" cellpadding="6" cellspacing="0">
+    <h3>Damages</h3>
+    <table border="1" cellpadding="6" cellspacing="0">
     <tr><th>Room</th><th>Damage</th><th>Charge</th><th>Notes</th></tr>`;
 
   let total = 0;
@@ -48,20 +51,21 @@ app.post('/send-report', async (req, res) => {
     if (d.filename) {
       const filePath = path.join(uploadPath, d.filename);
       if (fs.existsSync(filePath)) {
-        attachments.push({ filename: d.filename, path: filePath });
+        const fileData = fs.readFileSync(filePath);
+        attachments.push({
+          content: fileData.toString('base64'),
+          filename: d.filename,
+          type: 'image/jpeg',
+          disposition: 'attachment'
+        });
       }
     }
   }
 
   html += `<tr><td colspan="2"><b>Total</b></td><td><b>$${total.toFixed(2)}</b></td><td></td></tr></table>`;
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-  });
-
   try {
-    await transporter.sendMail({
+    await sgMail.send({
       from: process.env.EMAIL_FROM,
       to: officeEmail,
       subject: `Inspection Report — Unit ${unit}`,
@@ -69,7 +73,7 @@ app.post('/send-report', async (req, res) => {
       attachments
     });
 
-    await transporter.sendMail({
+    await sgMail.send({
       from: process.env.EMAIL_FROM,
       to: inspectorEmail,
       subject: `✅ Confirmation — Report sent for Unit ${unit}`,
@@ -85,7 +89,7 @@ app.post('/send-report', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error(err.response ? err.response.body : err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -93,5 +97,4 @@ app.post('/send-report', async (req, res) => {
 app.listen(process.env.PORT || 3001, () => {
   console.log(`✅ Inspection server running on http://localhost:${process.env.PORT || 3001}`);
   console.log(`   Upload folder: ${uploadPath}`);
-  console.log(`   Email account: ${process.env.EMAIL_USER}`);
 });
