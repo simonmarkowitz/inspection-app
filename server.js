@@ -45,7 +45,7 @@ async function logToSheet(unit, tenant, inspector, officeEmail, damages, total) 
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
     const damageList = damages.map(d => d.room + ' - ' + d.damage + ' ($' + d.price + ')').join(', ');
     await sheets.spreadsheets.values.append({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:G', valueInputOption: 'USER_ENTERED', requestBody: { values: [[new Date().toLocaleDateString(), unit, tenant || 'N/A', inspector, officeEmail, '$' + total.toFixed(2), damageList]] } });
-  } catch (err) { console.error('Sheet log error:', err.message); }
+  } catch (err) { console.error('Sheet log error:', JSON.stringify(err.message), JSON.stringify(err.response && err.response.data)); }
 }
 app.post('/upload', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
