@@ -19,7 +19,7 @@ const upload = multer({ storage });
 const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, process.env.REDIRECT_URI);
 if (process.env.GOOGLE_REFRESH_TOKEN) { oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN }); }
 app.get('/auth', (req, res) => {
-  const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ['https://www.googleapis.com/auth/drive.file'], prompt: 'consent' });
+  const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/spreadsheets'], prompt: 'consent' });
   res.redirect(url);
 });
 app.get('/auth/callback', async (req, res) => {
@@ -40,6 +40,13 @@ async function uploadToDrive(filePath, filename, unit) {
     return fileRes.data.webViewLink;
   } catch (err) { console.error('Drive upload error:', err.message); return null; }
 }
+async function logToSheet(unit, tenant, inspector, officeEmail, damages, total) {
+  try {
+    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+    const damageList = damages.map(d => d.room + ' - ' + d.damage + ' ($' + d.price + ')').join(', ');
+    await sheets.spreadsheets.values.append({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:G', valueInputOption: 'USER_ENTERED', requestBody: { values: [[new Date().toLocaleDateString(), unit, tenant || 'N/A', inspector, officeEmail, '$' + total.toFixed(2), damageList]] } });
+  } catch (err) { console.error('Sheet log error:', err.message); }
+}
 app.post('/upload', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   res.json({ filename: req.file.filename, path: req.file.path });
@@ -48,7 +55,7 @@ app.post('/send-report', async (req, res) => {
   const { unit, tenant, inspector, inspectorEmail, officeEmail, damages } = req.body;
   let html = '<h2>Inspection Report</h2>';
   html += '<p><b>Unit:</b> ' + unit + '</p>';
-  html += '<p><b>Tenant:</b> ' + tenant + '</p>';
+  html += '<p><b>Tenant:</b> ' + (tenant || 'N/A') + '</p>';
   html += '<p><b>Inspector:</b> ' + inspector + '</p>';
   html += '<p><b>Date:</b> ' + new Date().toLocaleDateString() + '</p>';
   html += '<h3>Damages</h3>';
@@ -71,12 +78,13 @@ app.post('/send-report', async (req, res) => {
     total += parseFloat(d.price) || 0;
   }
   html += '<tr><td colspan="3"><b>Total</b></td><td><b>$' + total.toFixed(2) + '</b></td><td></td></tr></table>';
-  const confirmHtml = '<h2>Report Confirmation</h2><p>Hi ' + inspector + ',</p><p>Report for Unit ' + unit + ' submitted.</p><p>Tenant: ' + tenant + '</p><p>Date: ' + new Date().toLocaleDateString() + '</p><p>Damages: ' + damages.length + '</p><p>Total: $' + total.toFixed(2) + '</p><p>Report and photos sent to office and uploaded to Google Drive.</p>';
+  const confirmHtml = '<h2>Report Confirmation</h2><p>Hi ' + inspector + ',</p><p>Report for Unit ' + unit + ' submitted.</p><p>Tenant: ' + (tenant || 'N/A') + '</p><p>Date: ' + new Date().toLocaleDateString() + '</p><p>Damages: ' + damages.length + '</p><p>Total: $' + total.toFixed(2) + '</p><p>Report and photos sent to office and uploaded to Google Drive.</p>';
   try {
     if (!officeEmail) throw new Error('No office email provided');
     const officeEmails = officeEmail.split(',').map(e => e.trim()).filter(e => e);
-await sgMail.send({ from: process.env.EMAIL_FROM, to: officeEmails, subject: 'Inspection Report - Unit ' + unit, html: html, attachments: attachments });
+    await sgMail.send({ from: process.env.EMAIL_FROM, to: officeEmails, subject: 'Inspection Report - Unit ' + unit, html: html, attachments: attachments });
     if (inspectorEmail) await sgMail.send({ from: process.env.EMAIL_FROM, to: inspectorEmail, subject: 'Confirmation - Report sent for Unit ' + unit, html: confirmHtml });
+    await logToSheet(unit, tenant, inspector, officeEmail, damages, total);
     res.json({ success: true });
   } catch (err) { console.error(err.response ? err.response.body : err); res.status(500).json({ error: err.message }); }
 });
