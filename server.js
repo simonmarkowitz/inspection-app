@@ -74,7 +74,8 @@ app.post('/send-report', async (req, res) => {
   const confirmHtml = '<h2>Report Confirmation</h2><p>Hi ' + inspector + ',</p><p>Report for Unit ' + unit + ' submitted.</p><p>Tenant: ' + tenant + '</p><p>Date: ' + new Date().toLocaleDateString() + '</p><p>Damages: ' + damages.length + '</p><p>Total: $' + total.toFixed(2) + '</p><p>Report and photos sent to office and uploaded to Google Drive.</p>';
   try {
     if (!officeEmail) throw new Error('No office email provided');
-    await sgMail.send({ from: process.env.EMAIL_FROM, to: officeEmail, subject: 'Inspection Report - Unit ' + unit, html: html, attachments: attachments });
+    const officeEmails = officeEmail.split(',').map(e => e.trim()).filter(e => e);
+await sgMail.send({ from: process.env.EMAIL_FROM, to: officeEmails, subject: 'Inspection Report - Unit ' + unit, html: html, attachments: attachments });
     if (inspectorEmail) await sgMail.send({ from: process.env.EMAIL_FROM, to: inspectorEmail, subject: 'Confirmation - Report sent for Unit ' + unit, html: confirmHtml });
     res.json({ success: true });
   } catch (err) { console.error(err.response ? err.response.body : err); res.status(500).json({ error: err.message }); }

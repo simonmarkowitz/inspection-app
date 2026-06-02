@@ -64,8 +64,8 @@
     <input type="text" id="inspector" placeholder="Your name">
     <label>Inspector Email (confirmation will be sent here)</label>
     <input type="email" id="inspector-email" placeholder="inspector@example.com">
-    <label>Office Email (report will be sent here)</label>
-    <input type="email" id="office-email" placeholder="office@example.com">
+    <label>Office Emails (separate multiple emails with a comma)</label>
+<input type="text" id="office-email" placeholder="office@example.com, manager@example.com">
   </div>
 
   <div class="card">
@@ -290,16 +290,12 @@ async function submitReport() {
   const inspectorEmail = document.getElementById('inspector-email').value.trim();
   const officeEmail = document.getElementById('office-email').value.trim();
 
-  if (!unit || !tenant || !inspector || !inspectorEmail || !officeEmail) {
-    document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all inspection details.</p>';
+  if (!unit || !inspector || !inspectorEmail || !officeEmail) {
+    document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all required fields.</p>';
     return;
   }
 
   const items = document.querySelectorAll('[id^="damage-"]');
-  if (items.length === 0) {
-    document.getElementById('result').innerHTML = '<p class="error-msg">Please add at least one damage item.</p>';
-    return;
-  }
 
   const btn = document.getElementById('submit-btn');
   btn.innerHTML = '<span class="spinner"></span> Sending...';
@@ -328,15 +324,27 @@ async function submitReport() {
     });
   }
 
+if (items.length === 0) {
+    damages.push({ room: 'N/A', damage: 'No damages found', price: '0', notes: '', filename: null });
+  }
   const res = await fetch('/send-report', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages })
   });
 
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch(e) {
+    data = { error: 'Server error — please try again or check your internet connection.' };
+  }
   btn.innerHTML = 'Send Report';
   btn.disabled = false;
+
+  if (!res.ok && !data.error) {
+    data.error = 'Failed to send report. Please check your internet connection and try again.';
+  }
 
   if (data.success) {
     document.getElementById('app').innerHTML = `
