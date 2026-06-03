@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Apartment Inspection</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/js/tom-select.complete.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/css/tom-select.min.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
@@ -14,19 +17,21 @@
   .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   h2 { font-size: 18px; margin-bottom: 16px; color: #1a56db; }
   label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; margin-top: 12px; }
-  input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+  input[type="text"], input[type="email"], input[type="number"], textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
   textarea { height: 70px; resize: vertical; }
   .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold; }
   .btn-primary { background: #1a56db; color: white; width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
   .btn-add { background: #e8f0fe; color: #1a56db; margin-top: 12px; }
-  .btn-remove { background: #fee2e2; color: #dc2626; float: right; padding: 6px 12px; font-size: 12px; }
-  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-remove { background: #fee2e2; color: #dc2626; float: right; padding: 6px 12px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+  .btn-danger { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; cursor: pointer; }
   .btn-success { background: #d1fae5; color: #065f46; }
+  .btn-warning { background: #fef3c7; color: #92400e; width: 100%; margin-top: 10px; padding: 12px; font-size: 15px; border: 2px dashed #f59e0b; border-radius: 6px; cursor: pointer; font-weight: bold; }
   .damage-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 12px; background: #fafafa; }
   .total { font-size: 20px; font-weight: bold; color: #1a56db; text-align: right; margin-top: 12px; }
   .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-top: 8px; }
   .success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
   .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
+  .warning-msg { color: #92400e; font-size: 13px; margin-top: 8px; background: #fef3c7; padding: 8px 12px; border-radius: 6px; }
   .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .page { display: none; }
@@ -36,10 +41,15 @@
   .settings-item input[type="text"] { flex: 2; }
   .settings-item input[type="number"] { flex: 1; }
   .settings-item button { flex-shrink: 0; padding: 8px 12px; font-size: 13px; }
-  .add-damage-row { display: flex; gap: 10px; margin-top: 12px; }
-  .add-damage-row input[type="text"] { flex: 2; }
-  .add-damage-row input[type="number"] { flex: 1; }
-  .add-damage-row button { flex-shrink: 0; }
+  .add-row { display: flex; gap: 10px; margin-top: 12px; }
+  .add-row input[type="text"] { flex: 2; }
+  .add-row input[type="number"] { flex: 1; }
+  .add-row button { flex-shrink: 0; }
+  .override-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: #92400e; }
+  .override-check input { width: auto; }
+  .photo-required { font-size: 12px; color: #dc2626; margin-top: 4px; }
+  .ts-wrapper { margin-top: 0; }
+  .no-damage-banner { background: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-weight: bold; text-align: center; }
 </style>
 </head>
 <body>
@@ -56,22 +66,26 @@
 <div class="container" id="app">
   <div class="card">
     <h2>Inspection Details</h2>
-    <label>Unit Number</label>
+    <label>Unit Number *</label>
     <input type="text" id="unit" placeholder="e.g. 4B">
     <label>Tenant Name</label>
-    <input type="text" id="tenant" placeholder="Former tenant's full name">
-    <label>Inspector Name</label>
+    <input type="text" id="tenant" placeholder="Former tenant's full name (optional)">
+    <label>Inspector Name *</label>
     <input type="text" id="inspector" placeholder="Your name">
-    <label>Inspector Email (confirmation will be sent here)</label>
+    <label>Inspector Email * (confirmation will be sent here)</label>
     <input type="email" id="inspector-email" placeholder="inspector@example.com">
-    <label>Office Emails (separate multiple emails with a comma)</label>
-<input type="text" id="office-email" placeholder="office@example.com, manager@example.com">
+    <label>Office Email(s) * (separate multiple with commas)</label>
+    <input type="text" id="office-email" placeholder="office@example.com, manager@example.com">
   </div>
 
   <div class="card">
     <h2>Damages</h2>
-    <div id="damages-list"></div>
-    <button class="btn btn-add" onclick="addDamage()">+ Add Damage</button>
+    <button class="btn btn-warning" onclick="toggleNoDamage()" id="no-damage-btn">✅ No Damages — Mark as Clean</button>
+    <div id="no-damage-banner" style="display:none" class="no-damage-banner">✅ Marked as No Damages</div>
+    <div id="damages-section">
+      <div id="damages-list"></div>
+      <button class="btn btn-add" onclick="addDamage()" id="add-damage-btn">+ Add Damage</button>
+    </div>
     <div class="total" id="total-display">Total: $0.00</div>
   </div>
 
@@ -84,15 +98,27 @@
 <div class="page" id="page-settings">
 <div class="container">
   <div class="card">
+    <h2>⚙️ Rooms</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add rooms.</p>
+    <div id="rooms-settings-list"></div>
+    <div class="add-row">
+      <input type="text" id="new-room-name" placeholder="New room name">
+      <button class="btn btn-add" onclick="addNewRoom()">+ Add</button>
+    </div>
+    <button class="btn btn-primary" onclick="saveRooms()">💾 Save Rooms</button>
+    <div id="rooms-result"></div>
+  </div>
+
+  <div class="card">
     <h2>⚙️ Damage Types & Prices</h2>
     <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add damage types and their default charges.</p>
+    <div style="margin-bottom:16px">
+      <label style="font-weight:bold;font-size:13px">Import from Excel</label>
+      <p style="font-size:12px;color:#666;margin-bottom:8px">Column A: damage name, Column B: price.</p>
+      <input type="file" id="excel-upload" accept=".xlsx,.xls" onchange="importExcel(this)">
+    </div>
     <div id="settings-list"></div>
-<div style="margin-bottom:16px">
-  <label style="font-weight:bold;font-size:13px">Import from Excel</label>
-  <p style="font-size:12px;color:#666;margin-bottom:8px">Excel file must have damage name in column A and price in column B.</p>
-  <input type="file" id="excel-upload" accept=".xlsx,.xls" onchange="importExcel(this)">
-</div>
-    <div class="add-damage-row">
+    <div class="add-row">
       <input type="text" id="new-damage-name" placeholder="New damage type">
       <input type="number" id="new-damage-price" placeholder="Price">
       <button class="btn btn-add" onclick="addNewDamage()">+ Add</button>
@@ -103,9 +129,8 @@
 </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-const ROOMS = [
+const DEFAULT_ROOMS = [
   'Entrance','Entrance Hallway Closet','Bedroom 1','Bedroom 1 Closet',
   'Bedroom 2','Bedroom 2 Closet','Bedroom 3','Bedroom 3 Closet',
   'Closet by Bathroom','Bathroom Closet','Bathroom','Kitchen','Living Room','Patio'
@@ -134,10 +159,106 @@ const DEFAULT_DAMAGES = [
   { name: 'Other (see notes)', price: 0 }
 ];
 
+function loadRooms() {
+  const stored = localStorage.getItem('rooms');
+  return stored ? JSON.parse(stored) : DEFAULT_ROOMS;
+}
+
 function loadDamages() {
   const stored = localStorage.getItem('damages');
   return stored ? JSON.parse(stored) : DEFAULT_DAMAGES;
 }
+
+let ROOMS = loadRooms();
+let DAMAGES = loadDamages();
+let damageCount = 0;
+let noDamage = false;
+const tomSelects = {};
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'settings') { renderSettings(); renderRoomsSettings(); }
+}
+
+function toggleNoDamage() {
+  noDamage = !noDamage;
+  document.getElementById('no-damage-banner').style.display = noDamage ? 'block' : 'none';
+  document.getElementById('damages-section').style.display = noDamage ? 'none' : 'block';
+  document.getElementById('no-damage-btn').style.background = noDamage ? '#6ee7b7' : '';
+  document.getElementById('total-display').textContent = noDamage ? 'Total: $0.00' : 'Total: $' + calcTotal().toFixed(2);
+}
+
+function calcTotal() {
+  let total = 0;
+  document.querySelectorAll('[id^="price-"]').forEach(el => { total += parseFloat(el.value) || 0; });
+  return total;
+}
+
+// ROOMS SETTINGS
+function renderRoomsSettings() {
+  const list = document.getElementById('rooms-settings-list');
+  list.innerHTML = '';
+  ROOMS.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'settings-item';
+    div.innerHTML = '<input type="text" value="' + r + '" id="rname-' + i + '"><button class="btn btn-danger" onclick="deleteRoom(' + i + ')">✕</button>';
+    list.appendChild(div);
+  });
+}
+
+function deleteRoom(i) { ROOMS.splice(i, 1); renderRoomsSettings(); }
+
+function addNewRoom() {
+  const name = document.getElementById('new-room-name').value.trim();
+  if (!name) { alert('Please enter a room name'); return; }
+  ROOMS.push(name);
+  document.getElementById('new-room-name').value = '';
+  renderRoomsSettings();
+}
+
+function saveRooms() {
+  const updated = [];
+  ROOMS.forEach((r, i) => { const name = document.getElementById('rname-' + i).value.trim(); if (name) updated.push(name); });
+  ROOMS = updated;
+  localStorage.setItem('rooms', JSON.stringify(ROOMS));
+  document.getElementById('rooms-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Rooms saved!</p>';
+  setTimeout(() => document.getElementById('rooms-result').innerHTML = '', 2000);
+}
+
+// DAMAGE SETTINGS
+function renderSettings() {
+  const list = document.getElementById('settings-list');
+  list.innerHTML = '';
+  DAMAGES.forEach((d, i) => {
+    const div = document.createElement('div');
+    div.className = 'settings-item';
+    div.innerHTML = '<input type="text" value="' + d.name + '" id="sname-' + i + '"><input type="number" value="' + d.price + '" id="sprice-' + i + '"><button class="btn btn-danger" onclick="deleteDamage(' + i + ')">✕</button>';
+    list.appendChild(div);
+  });
+}
+
+function deleteDamage(i) { DAMAGES.splice(i, 1); renderSettings(); }
+
+function addNewDamage() {
+  const name = document.getElementById('new-damage-name').value.trim();
+  const price = parseFloat(document.getElementById('new-damage-price').value) || 0;
+  if (!name) { alert('Please enter a damage name'); return; }
+  DAMAGES.push({ name, price });
+  document.getElementById('new-damage-name').value = '';
+  document.getElementById('new-damage-price').value = '';
+  renderSettings();
+}
+
+function saveDamages() {
+  const updated = [];
+  DAMAGES.forEach((d, i) => { const name = document.getElementById('sname-' + i).value.trim(); const price = parseFloat(document.getElementById('sprice-' + i).value) || 0; if (name) updated.push({ name, price }); });
+  DAMAGES = updated;
+  localStorage.setItem('damages', JSON.stringify(DAMAGES));
+  document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Changes saved!</p>';
+  setTimeout(() => document.getElementById('settings-result').innerHTML = '', 2000);
+}
+
 function importExcel(input) {
   const file = input.files[0];
   if (!file) return;
@@ -152,135 +273,129 @@ function importExcel(input) {
       for (const row of rows) {
         const name = row[0] ? String(row[0]).trim() : '';
         const price = parseFloat(row[1]) || 0;
-        if (name && name.toLowerCase() !== 'damage' && name.toLowerCase() !== 'name') {
-          imported.push({ name, price });
-        }
+        if (name && name.toLowerCase() !== 'damage' && name.toLowerCase() !== 'name') imported.push({ name, price });
       }
-      if (imported.length === 0) {
-        alert('No data found in the file. Make sure column A has damage names and column B has prices.');
-        return;
-      }
+      if (imported.length === 0) { alert('No data found in file.'); return; }
       DAMAGES = imported;
       renderSettings();
-      document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Imported ' + imported.length + ' items from Excel!</p>';
+      document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Imported ' + imported.length + ' items!</p>';
       setTimeout(() => document.getElementById('settings-result').innerHTML = '', 3000);
-    } catch (err) {
-      alert('Error reading file: ' + err.message);
-    }
+    } catch (err) { alert('Error reading file: ' + err.message); }
   };
   reader.readAsArrayBuffer(file);
 }
-function saveDamagesToStorage(damages) {
-  localStorage.setItem('damages', JSON.stringify(damages));
-}
 
-let DAMAGES = loadDamages();
-let damageCount = 0;
-
-function showPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  if (page === 'settings') renderSettings();
-}
-
-function renderSettings() {
-  const list = document.getElementById('settings-list');
-  list.innerHTML = '';
-  DAMAGES.forEach((d, i) => {
-    const div = document.createElement('div');
-    div.className = 'settings-item';
-    div.innerHTML = `
-      <input type="text" value="${d.name}" id="sname-${i}" placeholder="Damage name">
-      <input type="number" value="${d.price}" id="sprice-${i}" placeholder="Price">
-      <button class="btn btn-danger" onclick="deleteDamage(${i})">✕</button>
-    `;
-    list.appendChild(div);
-  });
-}
-
-function deleteDamage(i) {
-  DAMAGES.splice(i, 1);
-  renderSettings();
-}
-
-function addNewDamage() {
-  const name = document.getElementById('new-damage-name').value.trim();
-  const price = parseFloat(document.getElementById('new-damage-price').value) || 0;
-  if (!name) { alert('Please enter a damage name'); return; }
-  DAMAGES.push({ name, price });
-  document.getElementById('new-damage-name').value = '';
-  document.getElementById('new-damage-price').value = '';
-  renderSettings();
-}
-
-function saveDamages() {
-  const updated = [];
-  DAMAGES.forEach((d, i) => {
-    const name = document.getElementById(`sname-${i}`).value.trim();
-    const price = parseFloat(document.getElementById(`sprice-${i}`).value) || 0;
-    if (name) updated.push({ name, price });
-  });
-  DAMAGES = updated;
-  saveDamagesToStorage(DAMAGES);
-  document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Changes saved!</p>';
-  setTimeout(() => document.getElementById('settings-result').innerHTML = '', 2000);
-}
-
+// ADD DAMAGE ITEM
 function addDamage() {
   damageCount++;
   const id = damageCount;
-  const roomOptions = ROOMS.map(r => `<option value="${r}">${r}</option>`).join('');
-  const damageOptions = DAMAGES.map(d => `<option value="${d.name}" data-price="${d.price}">${d.name} — $${d.price}</option>`).join('');
 
   const div = document.createElement('div');
   div.className = 'damage-item';
-  div.id = `damage-${id}`;
+  div.id = 'damage-' + id;
   div.innerHTML = `
     <button class="btn btn-remove" onclick="removeDamage(${id})">✕ Remove</button>
     <label>Room</label>
-    <select id="room-${id}">${roomOptions}</select>
+    <select id="room-${id}"></select>
+    <div id="custom-room-wrap-${id}" style="display:none;margin-top:8px">
+      <input type="text" id="custom-room-${id}" placeholder="Enter room name">
+    </div>
     <label>Damage Type</label>
-    <select id="type-${id}" onchange="updatePrice(${id})">${damageOptions}</select>
+    <select id="type-${id}"></select>
+    <div id="custom-type-wrap-${id}" style="display:none;margin-top:8px">
+      <input type="text" id="custom-type-${id}" placeholder="Enter damage description">
+    </div>
     <label>Charge ($)</label>
-    <input type="number" id="price-${id}" value="${DAMAGES[0] ? DAMAGES[0].price : 0}" onchange="updateTotal()">
+    <input type="number" id="price-${id}" value="0" onchange="updateTotal(); checkPhotoRequired(${id})">
     <label>Photo</label>
-    <input type="file" id="photo-${id}" accept="image/*" capture="environment" onchange="previewPhoto(${id})">
+    <p class="photo-required" id="photo-required-${id}" style="display:none">📷 Photo required for charges over $0</p>
+    <input type="file" id="photo-${id}" accept="image/*" capture="environment" onchange="previewPhoto(${id}); checkPhotoRequired(${id})">
     <div id="preview-${id}"></div>
+    <div class="override-check" id="override-wrap-${id}" style="display:none">
+      <input type="checkbox" id="override-${id}" onchange="checkPhotoRequired(${id})">
+      <label for="override-${id}" style="margin:0;font-weight:normal">Override — submit without photo</label>
+    </div>
     <label>Notes (optional)</label>
     <textarea id="notes-${id}" placeholder="Describe the damage..."></textarea>
   `;
   document.getElementById('damages-list').appendChild(div);
+
+  // Room searchable dropdown
+  const roomSelect = new TomSelect('#room-' + id, {
+    options: [...ROOMS.map(r => ({ value: r, text: r })), { value: '__other__', text: 'Other (enter custom room)' }],
+    items: [ROOMS[0]],
+    onChange: function(val) {
+      document.getElementById('custom-room-wrap-' + id).style.display = val === '__other__' ? 'block' : 'none';
+    }
+  });
+
+  // Damage type searchable dropdown
+  const typeSelect = new TomSelect('#type-' + id, {
+    options: [...DAMAGES.map(d => ({ value: d.name, text: d.name + ' — $' + d.price, price: d.price })), { value: '__other__', text: 'Other (enter custom damage)', price: 0 }],
+    items: [DAMAGES[0] ? DAMAGES[0].name : ''],
+    onChange: function(val) {
+      const opt = this.options[val];
+      if (val === '__other__') {
+        document.getElementById('custom-type-wrap-' + id).style.display = 'block';
+        document.getElementById('price-' + id).value = 0;
+      } else {
+        document.getElementById('custom-type-wrap-' + id).style.display = 'none';
+        if (opt) document.getElementById('price-' + id).value = opt.price || 0;
+      }
+      updateTotal();
+      checkPhotoRequired(id);
+    }
+  });
+
+  tomSelects[id] = { room: roomSelect, type: typeSelect };
+  if (DAMAGES[0]) document.getElementById('price-' + id).value = DAMAGES[0].price;
   updateTotal();
+  checkPhotoRequired(id);
+}
+
+function checkPhotoRequired(id) {
+  const price = parseFloat(document.getElementById('price-' + id).value) || 0;
+  const hasPhoto = document.getElementById('photo-' + id).files.length > 0;
+  const overrideChecked = document.getElementById('override-' + id).checked;
+  const reqMsg = document.getElementById('photo-required-' + id);
+  const overrideWrap = document.getElementById('override-wrap-' + id);
+
+  if (price > 0 && !hasPhoto) {
+    reqMsg.style.display = 'block';
+    overrideWrap.style.display = 'flex';
+  } else {
+    reqMsg.style.display = 'none';
+    if (hasPhoto) overrideWrap.style.display = 'none';
+  }
 }
 
 function removeDamage(id) {
-  document.getElementById(`damage-${id}`).remove();
-  updateTotal();
-}
-
-function updatePrice(id) {
-  const sel = document.getElementById(`type-${id}`);
-  const price = sel.options[sel.selectedIndex].dataset.price;
-  document.getElementById(`price-${id}`).value = price;
+  if (tomSelects[id]) { tomSelects[id].room.destroy(); tomSelects[id].type.destroy(); delete tomSelects[id]; }
+  document.getElementById('damage-' + id).remove();
   updateTotal();
 }
 
 function updateTotal() {
-  let total = 0;
-  document.querySelectorAll('[id^="price-"]').forEach(el => {
-    total += parseFloat(el.value) || 0;
-  });
-  document.getElementById('total-display').textContent = `Total: $${total.toFixed(2)}`;
+  document.getElementById('total-display').textContent = 'Total: $' + calcTotal().toFixed(2);
 }
 
 function previewPhoto(id) {
-  const file = document.getElementById(`photo-${id}`).files[0];
+  const file = document.getElementById('photo-' + id).files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById(`preview-${id}`).innerHTML = `<img src="${e.target.result}" class="photo-preview">`;
-  };
+  reader.onload = e => { document.getElementById('preview-' + id).innerHTML = '<img src="' + e.target.result + '" class="photo-preview">'; };
   reader.readAsDataURL(file);
+  checkPhotoRequired(id);
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validateEmails(str) {
+  const emails = str.split(',').map(e => e.trim()).filter(e => e);
+  if (emails.length === 0) return false;
+  return emails.every(e => validateEmail(e));
 }
 
 async function submitReport() {
@@ -291,70 +406,101 @@ async function submitReport() {
   const officeEmail = document.getElementById('office-email').value.trim();
 
   if (!unit || !inspector || !inspectorEmail || !officeEmail) {
-    document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all required fields.</p>';
+    document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all required fields (marked with *).</p>';
+    return;
+  }
+
+  if (!validateEmail(inspectorEmail)) {
+    document.getElementById('result').innerHTML = '<p class="error-msg">Inspector email is not a valid email address.</p>';
+    return;
+  }
+
+  if (!validateEmails(officeEmail)) {
+    document.getElementById('result').innerHTML = '<p class="error-msg">One or more office email addresses are not valid.</p>';
     return;
   }
 
   const items = document.querySelectorAll('[id^="damage-"]');
 
+  // Check photo requirements
+  if (!noDamage) {
+    for (const item of items) {
+      const id = item.id.split('-')[1];
+      const price = parseFloat(document.getElementById('price-' + id).value) || 0;
+      const hasPhoto = document.getElementById('photo-' + id).files.length > 0;
+      const overrideChecked = document.getElementById('override-' + id).checked;
+      if (price > 0 && !hasPhoto && !overrideChecked) {
+        document.getElementById('result').innerHTML = '<p class="error-msg">Please add a photo for all damage items with a charge, or check the override box.</p>';
+        item.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+  }
+
   const btn = document.getElementById('submit-btn');
   btn.innerHTML = '<span class="spinner"></span> Sending...';
   btn.disabled = true;
+  document.getElementById('result').innerHTML = '';
 
   const damages = [];
-  for (const item of items) {
-    const id = item.id.split('-')[1];
-    const photoFile = document.getElementById(`photo-${id}`).files[0];
-    let filename = null;
 
-    if (photoFile) {
-      const formData = new FormData();
-      formData.append('photo', photoFile);
-      const res = await fetch('/upload', { method: 'POST', body: formData });
-      const data = await res.json();
-      filename = data.filename;
-    }
-
-    damages.push({
-      room: document.getElementById(`room-${id}`).value,
-      damage: document.getElementById(`type-${id}`).value,
-      price: document.getElementById(`price-${id}`).value,
-      notes: document.getElementById(`notes-${id}`).value,
-      filename
-    });
-  }
-
-if (items.length === 0) {
+  if (noDamage) {
     damages.push({ room: 'N/A', damage: 'No damages found', price: '0', notes: '', filename: null });
-  }
-  const res = await fetch('/send-report', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages })
-  });
+  } else {
+    for (const item of items) {
+      const id = item.id.split('-')[1];
+      const photoFile = document.getElementById('photo-' + id).files[0];
+      let filename = null;
 
-  let data;
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append('photo', photoFile);
+        try {
+          const res = await fetch('/upload', { method: 'POST', body: formData });
+          const data = await res.json();
+          filename = data.filename;
+        } catch(e) { console.error('Upload error:', e); }
+      }
+
+      const roomVal = tomSelects[id].room.getValue();
+      const typeVal = tomSelects[id].type.getValue();
+      const room = roomVal === '__other__' ? document.getElementById('custom-room-' + id).value.trim() || 'Other' : roomVal;
+      const damage = typeVal === '__other__' ? document.getElementById('custom-type-' + id).value.trim() || 'Other' : typeVal;
+
+      damages.push({
+        room,
+        damage,
+        price: document.getElementById('price-' + id).value,
+        notes: document.getElementById('notes-' + id).value,
+        filename
+      });
+    }
+  }
+
+  let res, data;
   try {
+    res = await fetch('/send-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages })
+    });
     data = await res.json();
   } catch(e) {
-    data = { error: 'Server error — please try again or check your internet connection.' };
+    data = { error: 'Could not connect to server. Please check your internet connection and try again.' };
   }
+
   btn.innerHTML = 'Send Report';
   btn.disabled = false;
 
-  if (!res.ok && !data.error) {
-    data.error = 'Failed to send report. Please check your internet connection and try again.';
-  }
-
-  if (data.success) {
+  if (data && data.success) {
     document.getElementById('app').innerHTML = `
       <div class="success">
         ✅ Report sent successfully!<br><br>
-        <span style="font-size:15px;font-weight:normal">Unit ${unit} — ${damages.length} damage(s) logged<br>Confirmation sent to ${inspectorEmail}</span><br><br>
+        <span style="font-size:15px;font-weight:normal">Unit ${unit} — ${damages.length} item(s) logged<br>Confirmation sent to ${inspectorEmail}</span><br><br>
         <button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button>
       </div>`;
   } else {
-    document.getElementById('result').innerHTML = `<p class="error-msg">Error: ${data.error}</p>`;
+    document.getElementById('result').innerHTML = '<p class="error-msg">❌ Error: ' + (data && data.error ? data.error : 'Unknown error. Please try again.') + '</p>';
   }
 }
 </script>
