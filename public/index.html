@@ -32,11 +32,14 @@ textarea { height: 70px; resize: vertical; }
 .page.active { display: block; }
 .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
 .success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
+
+/* Room block */
 .room-block { border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 16px; overflow: hidden; }
 .room-block-header { background: #f0f4ff; padding: 14px 16px; font-weight: bold; font-size: 15px; color: #1a56db; display: flex; justify-content: space-between; align-items: center; }
 .btn-back { background: #e8f0fe; color: #1a56db; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; flex-shrink: 0; }
 .room-block-body { padding: 16px; }
 .damage-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+
 .damage-checkbox { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
 .damage-label { flex: 1; font-size: 14px; }
 .damage-price { font-size: 13px; color: #6b7280; min-width: 50px; text-align: right; }
@@ -50,14 +53,20 @@ textarea { height: 70px; resize: vertical; }
 .damage-extra { background: #f8f9ff; border-radius: 6px; padding: 10px 12px; margin: 0 0 8px 30px; }
 .damage-extra-input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
 .damage-price-input { flex: 1; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+
+/* Room selector area */
 .room-selector-area { background: #f8f9ff; border: 2px dashed #c7d2fe; border-radius: 10px; padding: 20px; text-align: center; margin-top: 8px; }
 .room-selector-area select { max-width: 320px; margin: 0 auto; }
 .btn-add-room { background: #1a56db; color: white; border: none; border-radius: 8px; padding: 12px 28px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+
+/* Overview */
 .overview-room { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
 .overview-room-title { font-weight: bold; font-size: 15px; color: #1a56db; margin-bottom: 6px; }
 .overview-stat { font-size: 13px; color: #4b5563; }
 .overview-stat span { font-weight: bold; color: #111; }
 .total-display { font-size: 20px; font-weight: bold; color: #1a56db; text-align: right; margin-top: 12px; }
+
+/* Settings */
 .settings-item { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fafafa; }
 .settings-item input[type="text"] { flex: 2; }
 .settings-item input[type="number"] { flex: 1; }
@@ -65,6 +74,8 @@ textarea { height: 70px; resize: vertical; }
 .add-row input[type="text"] { flex: 2; }
 .add-row input[type="number"] { flex: 1; }
 .ts-wrapper { margin-top: 0; }
+
+/* Step indicator */
 .step-bar { display: flex; gap: 8px; margin-bottom: 20px; }
 .step-dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; }
 .step-dot.active { background: #1a56db; }
@@ -120,15 +131,22 @@ textarea { height: 70px; resize: vertical; }
     <div class="card">
       <h2>Damages by Room</h2>
       <p style="color:#6b7280;font-size:14px;margin-bottom:16px">Select a room to see its damage list.</p>
+
+      <!-- Room selector at the top -->
       <div class="room-selector-area" id="room-selector-area">
         <p style="font-size:14px;color:#6b7280;margin-bottom:10px">Select a room</p>
         <select id="room-select-dropdown"></select>
       </div>
+
+      <!-- Damage list for selected room appears here immediately after selection -->
       <div id="room-blocks"></div>
+
+      <!-- Action buttons — only shown after at least one room is added -->
       <div id="room-action-btns" style="display:none;margin-top:20px">
         <button class="btn-add-room" onclick="showRoomSelector()" style="width:100%;margin-bottom:12px;background:#e8f0fe;color:#1a56db">+ Select Another Room</button>
         <button class="btn btn-primary" style="margin-top:0" onclick="goToOverview()">Review &amp; Submit →</button>
       </div>
+
       <div id="damages-error" class="error-msg" style="margin-top:12px"></div>
     </div>
   </div>
@@ -219,6 +237,8 @@ function loadDamages() { const s = localStorage.getItem('damages'); return s ? J
 
 let ROOMS = loadRooms();
 let DAMAGES = loadDamages();
+
+// roomData: { roomName: { damages: { damageName: { checked, price, photos: [File,...] } } } }
 let roomData = {};
 let roomOrder = [];
 let roomSelectTS = null;
@@ -235,6 +255,7 @@ function validateEmails(s) {
   return arr.length > 0 && arr.every(e => validateEmail(e));
 }
 
+// ── STEP 1 → 2 ──
 function goToDamageQuestion() {
   const unit = document.getElementById('unit').value.trim();
   const inspector = document.getElementById('inspector').value.trim();
@@ -252,6 +273,7 @@ function goToDamageQuestion() {
   window.scrollTo(0, 0);
 }
 
+// ── NO DAMAGE → submit ──
 async function submitNoDamage() {
   const btn = event.target;
   btn.disabled = true;
@@ -276,6 +298,7 @@ async function submitNoDamage() {
   }
 }
 
+// ── YES DAMAGES → step 3 ──
 function goToDamages() {
   document.getElementById('step-damage-question').style.display = 'none';
   document.getElementById('step-damages').style.display = 'block';
@@ -319,12 +342,16 @@ function lockRoomBlock(roomName) {
   const escaped = CSS.escape(roomName);
   const block = document.getElementById('room-block-' + escaped);
   if (!block) return;
+  // Disable all checkboxes and camera buttons
   block.querySelectorAll('.damage-checkbox').forEach(el => el.disabled = true);
   block.querySelectorAll('.camera-btn').forEach(el => el.disabled = true);
+  // Style header to show it's locked
   const header = block.querySelector('.room-block-header');
   if (header) header.style.background = '#f3f4f6';
+  // Replace Remove button with a smaller locked indicator
   const removeBtn = block.querySelector('.btn-remove');
   if (removeBtn) removeBtn.style.display = 'none';
+  // Add locked badge if not already there
   if (!block.querySelector('.locked-badge')) {
     const badge = document.createElement('span');
     badge.className = 'locked-badge';
@@ -341,7 +368,9 @@ function addRoomBlock(val) {
   roomData[val] = {};
   roomOrder.push(val);
   DAMAGES.forEach(d => { roomData[val][d.name] = { checked: false, price: d.price, photos: [] }; });
+  // Hide all previous room blocks
   document.querySelectorAll(".room-block").forEach(el => el.style.display = "none");
+  // Hide selector, show action buttons
   document.getElementById("room-selector-area").style.display = "none";
   document.getElementById("room-action-btns").style.display = "block";
   renderRoomBlock(val);
@@ -353,6 +382,7 @@ function renderRoomBlock(roomName) {
   const block = document.createElement('div');
   block.className = 'room-block';
   block.id = 'room-block-' + CSS.escape(roomName);
+
   let rowsHTML = '';
   DAMAGES.forEach((d, i) => {
     const key = 'dmg-' + roomName.replace(/\s+/g, '_') + '-' + i;
@@ -377,11 +407,15 @@ function renderRoomBlock(roomName) {
         </div>
       </div>`;
   });
+
   block.innerHTML = `
     <div class="room-block-header">
       <button class="btn-back" onclick="goBackToRoom('${roomName}')">← Back</button>
       <span style="flex:1;text-align:center">${roomName}</span>
       <button class="btn-remove" onclick="removeRoomBlock('${roomName}')">✕ Remove</button>
+    </div>
+    <div style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">
+      <input type="text" id="search-${CSS.escape(roomName)}" placeholder="Search damages..." oninput="filterDamages('${roomName}', this.value)" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;">
     </div>
     <div class="room-block-body">${rowsHTML}</div>`;
   container.appendChild(block);
@@ -419,15 +453,100 @@ function triggerCamera(key) {
 
 function handlePhotos(roomName, damageName, key, input) {
   if (!roomData[roomName] || !roomData[roomName][damageName]) return;
-  const files = Array.from(input.files);
-  roomData[roomName][damageName].photos = files;
+  const file = input.files[0];
+  if (!file) return;
+  // Show photo review UI
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    showPhotoReview(roomName, damageName, key, file, e.target.result);
+  };
+  reader.readAsDataURL(file);
+  // Reset input so same photo can be retaken
+  input.value = '';
+}
+
+function showPhotoReview(roomName, damageName, key, file, dataUrl) {
+  // Remove any existing review modal
+  const existing = document.getElementById('photo-review-' + key);
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'photo-review-' + key;
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:12px;padding:20px;max-width:480px;width:100%;text-align:center;">
+      <p style="font-weight:bold;font-size:15px;margin-bottom:12px;color:#1a56db;">Photo Preview</p>
+      <img src="${dataUrl}" style="width:100%;max-height:300px;object-fit:contain;border-radius:8px;margin-bottom:16px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="retakePhoto('${key}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:bold;cursor:pointer;">🔄 Retry</button>
+        <button onclick="addAnotherPhoto('${key}')" style="background:#e8f0fe;color:#1a56db;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:bold;cursor:pointer;">📷 Take Another Photo</button>
+        <button onclick="confirmPhoto('${key}')" style="background:#065f46;color:white;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:bold;cursor:pointer;">✅ OK</button>
+      </div>
+    </div>`;
+
+  // Store pending file and damage info on modal element
+  modal._pendingFile = file;
+  modal._roomName = roomName;
+  modal._damageName = damageName;
+  document.body.appendChild(modal);
+}
+
+function retakePhoto(key) {
+  const modal = document.getElementById('photo-review-' + key);
+  if (modal) modal.remove();
+  document.getElementById('file-' + key).click();
+}
+
+function addAnotherPhoto(key) {
+  const modal = document.getElementById('photo-review-' + key);
+  if (!modal) return;
+  const file = modal._pendingFile;
+  const roomName = modal._roomName;
+  const damageName = modal._damageName;
+  if (file && roomData[roomName] && roomData[roomName][damageName]) {
+    if (!roomData[roomName][damageName].photos) roomData[roomName][damageName].photos = [];
+    roomData[roomName][damageName].photos.push(file);
+    updateBadge(key, roomData[roomName][damageName].photos.length);
+  }
+  modal.remove();
+  document.getElementById('file-' + key).click();
+}
+
+function confirmPhoto(key) {
+  const modal = document.getElementById('photo-review-' + key);
+  if (!modal) return;
+  const file = modal._pendingFile;
+  const roomName = modal._roomName;
+  const damageName = modal._damageName;
+  if (file && roomData[roomName] && roomData[roomName][damageName]) {
+    if (!roomData[roomName][damageName].photos) roomData[roomName][damageName].photos = [];
+    roomData[roomName][damageName].photos.push(file);
+    updateBadge(key, roomData[roomName][damageName].photos.length);
+  }
+  modal.remove();
+}
+
+function updateBadge(key, count) {
   const badge = document.getElementById('badge-' + key);
-  if (files.length > 0) {
-    badge.textContent = '📷 ' + files.length;
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = '📷 ' + count;
     badge.classList.add('visible');
   } else {
     badge.classList.remove('visible');
   }
+}
+
+function filterDamages(roomName, query) {
+  const block = document.getElementById('room-block-' + CSS.escape(roomName));
+  if (!block) return;
+  const q = query.toLowerCase().trim();
+  block.querySelectorAll('.damage-row-wrap').forEach(wrap => {
+    const label = wrap.querySelector('.damage-label');
+    if (!label) return;
+    const text = label.textContent.toLowerCase();
+    wrap.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
 }
 
 function goBackToRoom(currentRoomName) {
@@ -471,6 +590,7 @@ function removeRoomBlock(roomName) {
   }
 }
 
+// ── STEP 3 → 4 overview ──
 function goToOverview() {
   const rooms = Object.keys(roomData);
   if (rooms.length === 0) { document.getElementById('damages-error').textContent = 'Please add at least one room with damages.'; return; }
@@ -478,6 +598,7 @@ function goToOverview() {
   rooms.forEach(r => { Object.values(roomData[r]).forEach(d => { if (d.checked) hasAnyDamage = true; }); });
   if (!hasAnyDamage) { document.getElementById('damages-error').textContent = 'Please check at least one damage item.'; return; }
   document.getElementById('damages-error').textContent = '';
+
   let overviewHTML = '';
   let grandTotal = 0;
   rooms.forEach(roomName => {
@@ -495,10 +616,11 @@ function goToOverview() {
         <div class="overview-stat">Photos taken: <span>${totalPhotos}</span></div>
         <div class="overview-stat">Room total: <span>$${roomTotal.toFixed(2)}</span></div>
         <ul style="margin-top:8px;padding-left:18px;font-size:13px;color:#4b5563">
-          ${checkedDamages.map(([name,d]) => `<li>${(name === 'Other (see notes)' && d.otherDesc) ? d.otherDesc : name} — $${d.price}${d.photos.length > 0 ? ' 📷 ' + d.photos.length : ''}${d.comment ? ' — ' + d.comment : ''}</li>`).join('')}
+          ${checkedDamages.map(([name,d]) => `<li>${name} — $${d.price} ${d.photos.length > 0 ? '📷 ' + d.photos.length : ''}</li>`).join('')}
         </ul>
       </div>`;
   });
+
   document.getElementById('overview-content').innerHTML = overviewHTML;
   document.getElementById('overview-total').textContent = 'Total: $' + grandTotal.toFixed(2);
   document.getElementById('step-damages').style.display = 'none';
@@ -509,6 +631,7 @@ function goToOverview() {
 function goBackToDamages() {
   document.getElementById('step-overview').style.display = 'none';
   document.getElementById('step-damages').style.display = 'block';
+  // Show only the last room block
   document.querySelectorAll('.room-block').forEach(el => el.style.display = 'none');
   if (roomOrder.length > 0) {
     const lastRoom = roomOrder[roomOrder.length - 1];
@@ -519,6 +642,7 @@ function goBackToDamages() {
   window.scrollTo(0, 0);
 }
 
+// ── SUBMIT ──
 async function submitReport() {
   const unit = document.getElementById('unit').value.trim();
   const tenant = document.getElementById('tenant').value.trim();
@@ -528,6 +652,7 @@ async function submitReport() {
   const btn = document.getElementById('submit-btn');
   btn.innerHTML = '<span class="spinner"></span> Sending...';
   btn.disabled = true;
+
   const damages = [];
   const reportNotes = document.getElementById('report-notes').value.trim();
   for (const [roomName, dmgs] of Object.entries(roomData)) {
@@ -544,17 +669,20 @@ async function submitReport() {
         } catch(e) { console.error('Upload error:', e); }
       }
       const displayName = (damageName === 'Other (see notes)' && d.otherDesc) ? d.otherDesc : damageName;
-      const notes = d.comment || '';
-      damages.push({ room: roomName, damage: displayName, price: String(d.price), notes, filename: filenames[0] || null, filenames });
+      const notes = [d.comment, (damageName === 'Other (see notes)' && d.otherDesc) ? '' : ''].filter(Boolean).join(' ');
+      damages.push({ room: roomName, damage: displayName, price: String(d.price), notes: notes, filename: filenames[0] || null, filenames });
     }
   }
+
   let res, data;
   try {
     res = await fetch('/send-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages, notes: reportNotes }) });
     data = await res.json();
   } catch(e) { data = { error: 'Could not connect to server.' }; }
+
   btn.innerHTML = 'Send Report';
   btn.disabled = false;
+
   if (data && data.success) {
     document.getElementById('step-overview').innerHTML = '<div class="success">✅ Report sent successfully!<br><br><span style="font-size:15px;font-weight:normal">Unit ' + unit + ' — ' + damages.length + ' item(s) logged<br>Confirmation sent to ' + inspectorEmail + '</span><br><br><button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button></div>';
   } else {
@@ -562,6 +690,7 @@ async function submitReport() {
   }
 }
 
+// ── SETTINGS ──
 function renderRoomsSettings() {
   const list = document.getElementById('rooms-settings-list');
   list.innerHTML = '';
