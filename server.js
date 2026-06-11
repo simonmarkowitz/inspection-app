@@ -34,4 +34,61 @@ async function uploadToDrive(filePath, filename, unit) {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     const folderRes = await drive.files.list({ q: "name='Unit " + unit + "' and mimeType='application/vnd.google-apps.folder' and '" + process.env.DRIVE_FOLDER_ID + "' in parents and trashed=false", fields: 'files(id, name)' });
     let unitFolderId;
-    if (folderRes.data.files.len
+    if (folderRes.data.files.length > 0) { unitFolderId = folderRes.data.files[0].id; }
+    else { const newFolder = await drive.files.create({ requestBody: { name: 'Unit ' + unit, mimeType: 'application/vnd.google-apps.folder', parents: [process.env.DRIVE_FOLDER_ID] }, fields: 'id' }); unitFolderId = newFolder.data.id; }
+    const fileRes = await drive.files.create({ requestBody: { name: filename, parents: [unitFolderId] }, media: { mimeType: 'image/jpeg', body: fs.createReadStream(filePath) }, fields: 'id, webViewLink' });
+    return fileRes.data.webViewLink;
+  } catch (err) { console.error('Drive upload error:', err.message); return null; }
+}
+async function logToSheet(unit, tenant, inspector, officeEmail, damages, total, notes) {
+  try {
+    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+    const damageList = damages.map(d => d.room + ' - ' + d.damage + ' ($' + d.price + ')').join(', ');
+    await sheets.spreadsheets.values.append({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:H', valueInputOption: 'USER_ENTERED', requestBody: { values: [[new Date().toLocaleDateString(), unit, tenant || 'N/A', inspector, officeEmail, '$' + total.toFixed(2), damageList, notes || '']] } });
+  } catch (err) { console.error('Sheet log error:', JSON.stringify(err.message), JSON.stringify(err.response && err.response.data)); }
+}
+app.post('/upload', upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  res.json({ filename: req.file.filename, path: req.file.path });
+});
+app.post('/send-report', async (req, res) => {
+  const { unit, tenant, inspector, inspectorEmail, officeEmail, damages, notes } = req.body;
+  let html = '<h2>Inspection Report</h2>';
+  html += '<p><b>Unit:</b> ' + unit + '</p>';
+  html += '<p><b>Tenant:</b> ' + (tenant || 'N/A') + '</p>';
+  html += '<p><b>Inspector:</b> ' + inspector + '</p>';
+  html += '<p><b>Date:</b> ' + new Date().toLocaleDateString() + '</p>';
+  if (notes) html += '<p><b>Notes:</b> ' + notes + '</p>';
+  html += '<h3>Damages</h3>';
+  html += '<table border="1" cellpadding="6" cellspacing="0">';
+  html += '<tr><th>Room</th><th>Damage</th><th>Charge</th><th>Notes</th><th>Photos</th></tr>';
+  let total = 0;
+  const attachments = [];
+  for (const d of damages) {
+    const allFilenames = d.filenames && d.filenames.length > 0 ? d.filenames : (d.filename ? [d.filename] : []);
+    const driveLinks = [];
+    for (const filename of allFilenames) {
+      const filePath = path.join(uploadPath, filename);
+      if (fs.existsSync(filePath)) {
+        const fileData = fs.readFileSync(filePath);
+        attachments.push({ content: fileData.toString('base64'), filename: filename, type: 'image/jpeg', disposition: 'attachment' });
+        const link = await uploadToDrive(filePath, filename, unit);
+        if (link) driveLinks.push('<a href="' + link + '">Photo ' + (driveLinks.length + 1) + '</a>');
+      }
+    }
+    const photosCell = driveLinks.length > 0 ? driveLinks.join(' | ') : '';
+    html += '<tr><td>' + d.room + '</td><td>' + d.damage + '</td><td>$' + d.price + '</td><td>' + (d.notes || '') + '</td><td>' + photosCell + '</td></tr>';
+    total += parseFloat(d.price) || 0;
+  }
+  html += '<tr><td colspan="2"><b>Total</b></td><td><b>$' + total.toFixed(2) + '</b></td><td></td><td></td></tr></table>';
+  const confirmHtml = '<h2>Report Confirmation</h2><p>Hi ' + inspector + ',</p><p>Report for Unit ' + unit + ' submitted.</p><p>Tenant: ' + (tenant || 'N/A') + '</p><p>Date: ' + new Date().toLocaleDateString() + '</p><p>Damages: ' + damages.length + '</p><p>Total: $' + total.toFixed(2) + '</p>' + (notes ? '<p>Notes: ' + notes + '</p>' : '') + '<p>Report and photos sent to office and uploaded to Google Drive.</p>';
+  try {
+    if (!officeEmail) throw new Error('No office email provided');
+    const officeEmails = officeEmail.split(',').map(e => e.trim()).filter(e => e);
+    await sgMail.send({ from: process.env.EMAIL_FROM, to: officeEmails, subject: 'Inspection Report - Unit ' + unit, html: html, attachments: attachments });
+    if (inspectorEmail) await sgMail.send({ from: process.env.EMAIL_FROM, to: inspectorEmail, subject: 'Confirmation - Report sent for Unit ' + unit, html: confirmHtml });
+    await logToSheet(unit, tenant, inspector, officeEmail, damages, total, notes);
+    res.json({ success: true });
+  } catch (err) { console.error(err.response ? err.response.body : err); res.status(500).json({ error: err.message }); }
+});
+app.listen(process.env.PORT || 3001, function() { console.log('Inspection server running on port ' + (process.env.PORT || 3001)); console.log('Upload folder: ' + uploadPath); });
