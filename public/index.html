@@ -4,52 +4,71 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Apartment Inspection</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/js/tom-select.complete.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/css/tom-select.min.css">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
-  .header { background: #1a56db; color: white; padding: 16px 24px; font-size: 22px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-  .header-btns { display: flex; gap: 10px; }
-  .btn-settings { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-  .container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
-  .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  h2 { font-size: 18px; margin-bottom: 16px; color: #1a56db; }
-  label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; margin-top: 12px; }
-  input[type="text"], input[type="email"], input[type="number"], textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
-  textarea { height: 70px; resize: vertical; }
-  .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold; }
-  .btn-primary { background: #1a56db; color: white; width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
-  .btn-add { background: #e8f0fe; color: #1a56db; margin-top: 12px; }
-  .btn-remove { background: #fee2e2; color: #dc2626; float: right; padding: 6px 12px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-  .btn-danger { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; cursor: pointer; }
-  .btn-success { background: #d1fae5; color: #065f46; }
-  .btn-warning { background: #fef3c7; color: #92400e; width: 100%; margin-top: 10px; padding: 12px; font-size: 15px; border: 2px dashed #f59e0b; border-radius: 6px; cursor: pointer; font-weight: bold; }
-  .damage-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 12px; background: #fafafa; }
-  .total { font-size: 20px; font-weight: bold; color: #1a56db; text-align: right; margin-top: 12px; }
-  .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-top: 8px; }
-  .success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
-  .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
-  .warning-msg { color: #92400e; font-size: 13px; margin-top: 8px; background: #fef3c7; padding: 8px 12px; border-radius: 6px; }
-  .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .page { display: none; }
-  .page.active { display: block; }
-  .settings-item { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fafafa; }
-  .settings-item input { margin: 0; }
-  .settings-item input[type="text"] { flex: 2; }
-  .settings-item input[type="number"] { flex: 1; }
-  .settings-item button { flex-shrink: 0; padding: 8px 12px; font-size: 13px; }
-  .add-row { display: flex; gap: 10px; margin-top: 12px; }
-  .add-row input[type="text"] { flex: 2; }
-  .add-row input[type="number"] { flex: 1; }
-  .add-row button { flex-shrink: 0; }
-  .override-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: #92400e; }
-  .override-check input { width: auto; }
-  .photo-required { font-size: 12px; color: #dc2626; margin-top: 4px; }
-  .ts-wrapper { margin-top: 0; }
-  .no-damage-banner { background: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-weight: bold; text-align: center; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+.header { background: #1a56db; color: white; padding: 16px 24px; font-size: 22px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+.header-btns { display: flex; gap: 10px; }
+.btn-settings { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.container { max-width: 800px; margin: 24px auto; padding: 0 16px 40px; }
+.card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 18px; margin-bottom: 16px; color: #1a56db; }
+label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; margin-top: 12px; }
+input[type="text"], input[type="email"], input[type="number"], textarea, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+textarea { height: 70px; resize: vertical; }
+.btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold; }
+.btn-primary { background: #1a56db; color: white; width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
+.btn-add { background: #e8f0fe; color: #1a56db; margin-top: 12px; border: none; border-radius: 6px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-weight: bold; }
+.btn-remove { background: #fee2e2; color: #dc2626; padding: 6px 12px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.btn-danger { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; cursor: pointer; padding: 8px 12px; font-size: 13px; }
+.btn-yes { background: #dc2626; color: white; border: none; border-radius: 8px; padding: 16px 32px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; }
+.btn-no { background: #065f46; color: white; border: none; border-radius: 8px; padding: 16px 32px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; }
+.damage-choice { display: flex; gap: 16px; margin-top: 20px; }
+.spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.page { display: none; }
+.page.active { display: block; }
+.error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
+.success { background: #d1fae5; color: #065f46; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; }
+.room-block { border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 16px; overflow: hidden; }
+.room-block-header { background: #f0f4ff; padding: 14px 16px; font-weight: bold; font-size: 15px; color: #1a56db; display: flex; justify-content: space-between; align-items: center; }
+.btn-back { background: #e8f0fe; color: #1a56db; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; flex-shrink: 0; }
+.room-block-body { padding: 16px; }
+.damage-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+.damage-checkbox { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+.damage-label { flex: 1; font-size: 14px; }
+.damage-price { font-size: 13px; color: #6b7280; min-width: 50px; text-align: right; }
+.camera-btn { background: #1a56db; color: white; border: none; border-radius: 6px; padding: 7px 12px; font-size: 13px; cursor: pointer; flex-shrink: 0; display: none; }
+.camera-btn.visible { display: inline-block; }
+.photo-count-badge { background: #d1fae5; color: #065f46; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: bold; display: none; flex-shrink: 0; }
+.photo-count-badge.visible { display: inline-block; }
+.hidden-file { display: none; }
+.damage-row-wrap { border-bottom: 1px solid #f3f4f6; }
+.damage-row-wrap:last-child { border-bottom: none; }
+.damage-extra { background: #f8f9ff; border-radius: 6px; padding: 10px 12px; margin: 0 0 8px 30px; }
+.damage-extra-input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+.damage-price-input { flex: 1; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+.room-selector-area { background: #f8f9ff; border: 2px dashed #c7d2fe; border-radius: 10px; padding: 20px; text-align: center; margin-top: 8px; }
+.room-selector-area select { max-width: 320px; margin: 0 auto; }
+.btn-add-room { background: #1a56db; color: white; border: none; border-radius: 8px; padding: 12px 28px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+.overview-room { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+.overview-room-title { font-weight: bold; font-size: 15px; color: #1a56db; margin-bottom: 6px; }
+.overview-stat { font-size: 13px; color: #4b5563; }
+.overview-stat span { font-weight: bold; color: #111; }
+.total-display { font-size: 20px; font-weight: bold; color: #1a56db; text-align: right; margin-top: 12px; }
+.settings-item { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #fafafa; }
+.settings-item input[type="text"] { flex: 2; }
+.settings-item input[type="number"] { flex: 1; }
+.add-row { display: flex; gap: 10px; margin-top: 12px; }
+.add-row input[type="text"] { flex: 2; }
+.add-row input[type="number"] { flex: 1; }
+.ts-wrapper { margin-top: 0; }
+.step-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; }
+.step-dot.active { background: #1a56db; }
+.step-dot.done { background: #6ee7b7; }
 </style>
 </head>
 <body>
@@ -63,34 +82,77 @@
 
 <!-- INSPECTION PAGE -->
 <div class="page active" id="page-inspection">
-<div class="container" id="app">
-  <div class="card">
-    <h2>Inspection Details</h2>
-    <label>Unit Number *</label>
-    <input type="text" id="unit" placeholder="e.g. 4B">
-    <label>Tenant Name</label>
-    <input type="text" id="tenant" placeholder="Former tenant's full name (optional)">
-    <label>Inspector Name *</label>
-    <input type="text" id="inspector" placeholder="Your name">
-    <label>Inspector Email * (confirmation will be sent here)</label>
-    <input type="email" id="inspector-email" placeholder="inspector@example.com">
-    <label>Office Email(s) * (separate multiple with commas)</label>
-    <input type="text" id="office-email" placeholder="office@example.com, manager@example.com">
-  </div>
+<div class="container">
 
-  <div class="card">
-    <h2>Damages</h2>
-    <button class="btn btn-warning" onclick="toggleNoDamage()" id="no-damage-btn">✅ No Damages — Mark as Clean</button>
-    <div id="no-damage-banner" style="display:none" class="no-damage-banner">✅ Marked as No Damages</div>
-    <div id="damages-section">
-      <div id="damages-list"></div>
-      <button class="btn btn-add" onclick="addDamage()" id="add-damage-btn">+ Add Damage</button>
+  <!-- STEP 1: Details -->
+  <div id="step-details">
+    <div class="card">
+      <h2>Inspection Details</h2>
+      <label>Unit Number *</label>
+      <input type="text" id="unit" placeholder="e.g. 4B">
+      <label>Tenant Name</label>
+      <input type="text" id="tenant" placeholder="Former tenant's full name (optional)">
+      <label>Inspector Name *</label>
+      <input type="text" id="inspector" placeholder="Your name">
+      <label>Inspector Email * <span style="font-weight:normal;color:#6b7280">(confirmation sent here)</span></label>
+      <input type="email" id="inspector-email" placeholder="inspector@example.com">
+      <label>Office Email(s) * <span style="font-weight:normal;color:#6b7280">(separate multiple with commas)</span></label>
+      <input type="text" id="office-email" placeholder="office@example.com, manager@example.com">
+      <div id="details-error" class="error-msg"></div>
+      <button class="btn btn-primary" onclick="goToDamageQuestion()">Next →</button>
     </div>
-    <div class="total" id="total-display">Total: $0.00</div>
   </div>
 
-  <button class="btn btn-primary" onclick="submitReport()" id="submit-btn">Send Report</button>
-  <div id="result"></div>
+  <!-- STEP 2: Damage question -->
+  <div id="step-damage-question" style="display:none">
+    <div class="card">
+      <h2>Are there any damages?</h2>
+      <p style="color:#6b7280;font-size:14px">Unit <strong id="unit-display"></strong> — Inspector: <strong id="inspector-display"></strong></p>
+      <div class="damage-choice">
+        <button class="btn-no" onclick="submitNoDamage()">✅ No Damages</button>
+        <button class="btn-yes" onclick="goToDamages()">⚠️ Yes, There Are Damages</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Add damages by room -->
+  <div id="step-damages" style="display:none">
+    <div class="card">
+      <h2>Damages by Room</h2>
+      <p style="color:#6b7280;font-size:14px;margin-bottom:16px">Select a room to see its damage list.</p>
+      <div class="room-selector-area" id="room-selector-area">
+        <p style="font-size:14px;color:#6b7280;margin-bottom:10px">Select a room</p>
+        <select id="room-select-dropdown"></select>
+      </div>
+      <div id="room-blocks"></div>
+      <div id="room-action-btns" style="display:none;margin-top:20px">
+        <button class="btn-add-room" onclick="showRoomSelector()" style="width:100%;margin-bottom:12px;background:#e8f0fe;color:#1a56db">+ Select Another Room</button>
+        <button class="btn btn-primary" style="margin-top:0" onclick="goToOverview()">Review &amp; Submit →</button>
+      </div>
+      <div id="damages-error" class="error-msg" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Overview -->
+  <div id="step-overview" style="display:none">
+    <div class="card">
+      <h2>Inspection Summary</h2>
+      <p style="color:#6b7280;font-size:14px;margin-bottom:16px">Review before submitting.</p>
+      <div id="overview-content"></div>
+      <div class="total-display" id="overview-total"></div>
+      <div style="margin-top:20px">
+        <label style="font-size:13px;font-weight:bold;margin-bottom:6px;display:block">Notes <span style="font-weight:normal;color:#6b7280">(optional — will be included in the report)</span></label>
+        <textarea id="report-notes" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;height:80px;resize:vertical" placeholder="Any additional notes about this inspection..."></textarea>
+      </div>
+      <div id="submit-error" class="error-msg"></div>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-add" onclick="goBackToDamages()" style="flex:1">← Edit</button>
+        <button class="btn btn-primary" style="margin-top:0;flex:2" onclick="submitReport()" id="submit-btn">Send Report</button>
+      </div>
+      <div id="result"></div>
+    </div>
+  </div>
+
 </div>
 </div>
 
@@ -99,7 +161,7 @@
 <div class="container">
   <div class="card">
     <h2>⚙️ Rooms</h2>
-    <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add rooms.</p>
+    <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add rooms. These are loaded from Google Sheets in production.</p>
     <div id="rooms-settings-list"></div>
     <div class="add-row">
       <input type="text" id="new-room-name" placeholder="New room name">
@@ -108,15 +170,9 @@
     <button class="btn btn-primary" onclick="saveRooms()">💾 Save Rooms</button>
     <div id="rooms-result"></div>
   </div>
-
   <div class="card">
-    <h2>⚙️ Damage Types & Prices</h2>
-    <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add damage types and their default charges.</p>
-    <div style="margin-bottom:16px">
-      <label style="font-weight:bold;font-size:13px">Import from Excel</label>
-      <p style="font-size:12px;color:#666;margin-bottom:8px">Column A: damage name, Column B: price.</p>
-      <input type="file" id="excel-upload" accept=".xlsx,.xls" onchange="importExcel(this)">
-    </div>
+    <h2>⚙️ Damage Types &amp; Prices</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px">Edit, delete, or add damage types. These are loaded from Google Sheets in production.</p>
     <div id="settings-list"></div>
     <div class="add-row">
       <input type="text" id="new-damage-name" placeholder="New damage type">
@@ -135,7 +191,6 @@ const DEFAULT_ROOMS = [
   'Bedroom 2','Bedroom 2 Closet','Bedroom 3','Bedroom 3 Closet',
   'Closet by Bathroom','Bathroom Closet','Bathroom','Kitchen','Living Room','Patio'
 ];
-
 const DEFAULT_DAMAGES = [
   { name: 'Hole in wall (small)', price: 75 },
   { name: 'Hole in wall (large)', price: 150 },
@@ -159,21 +214,14 @@ const DEFAULT_DAMAGES = [
   { name: 'Other (see notes)', price: 0 }
 ];
 
-function loadRooms() {
-  const stored = localStorage.getItem('rooms');
-  return stored ? JSON.parse(stored) : DEFAULT_ROOMS;
-}
-
-function loadDamages() {
-  const stored = localStorage.getItem('damages');
-  return stored ? JSON.parse(stored) : DEFAULT_DAMAGES;
-}
+function loadRooms() { const s = localStorage.getItem('rooms'); return s ? JSON.parse(s) : DEFAULT_ROOMS; }
+function loadDamages() { const s = localStorage.getItem('damages'); return s ? JSON.parse(s) : DEFAULT_DAMAGES; }
 
 let ROOMS = loadRooms();
 let DAMAGES = loadDamages();
-let damageCount = 0;
-let noDamage = false;
-const tomSelects = {};
+let roomData = {};
+let roomOrder = [];
+let roomSelectTS = null;
 
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -181,21 +229,339 @@ function showPage(page) {
   if (page === 'settings') { renderSettings(); renderRoomsSettings(); }
 }
 
-function toggleNoDamage() {
-  noDamage = !noDamage;
-  document.getElementById('no-damage-banner').style.display = noDamage ? 'block' : 'none';
-  document.getElementById('damages-section').style.display = noDamage ? 'none' : 'block';
-  document.getElementById('no-damage-btn').style.background = noDamage ? '#6ee7b7' : '';
-  document.getElementById('total-display').textContent = noDamage ? 'Total: $0.00' : 'Total: $' + calcTotal().toFixed(2);
+function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function validateEmails(s) {
+  const arr = s.split(',').map(e => e.trim()).filter(e => e);
+  return arr.length > 0 && arr.every(e => validateEmail(e));
 }
 
-function calcTotal() {
-  let total = 0;
-  document.querySelectorAll('[id^="price-"]').forEach(el => { total += parseFloat(el.value) || 0; });
-  return total;
+function goToDamageQuestion() {
+  const unit = document.getElementById('unit').value.trim();
+  const inspector = document.getElementById('inspector').value.trim();
+  const inspectorEmail = document.getElementById('inspector-email').value.trim();
+  const officeEmail = document.getElementById('office-email').value.trim();
+  const err = document.getElementById('details-error');
+  if (!unit || !inspector || !inspectorEmail || !officeEmail) { err.textContent = 'Please fill in all required fields.'; return; }
+  if (!validateEmail(inspectorEmail)) { err.textContent = 'Inspector email is not valid.'; return; }
+  if (!validateEmails(officeEmail)) { err.textContent = 'One or more office email addresses are not valid.'; return; }
+  err.textContent = '';
+  document.getElementById('unit-display').textContent = unit;
+  document.getElementById('inspector-display').textContent = inspector;
+  document.getElementById('step-details').style.display = 'none';
+  document.getElementById('step-damage-question').style.display = 'block';
+  window.scrollTo(0, 0);
 }
 
-// ROOMS SETTINGS
+async function submitNoDamage() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  const unit = document.getElementById('unit').value.trim();
+  const tenant = document.getElementById('tenant').value.trim();
+  const inspector = document.getElementById('inspector').value.trim();
+  const inspectorEmail = document.getElementById('inspector-email').value.trim();
+  const officeEmail = document.getElementById('office-email').value.trim();
+  const damages = [{ room: 'N/A', damage: 'No damages found', price: '0', notes: '', filename: null }];
+  let res, data;
+  try {
+    res = await fetch('/send-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages, notes: '' }) });
+    data = await res.json();
+  } catch(e) { data = { error: 'Could not connect to server.' }; }
+  if (data && data.success) {
+    document.getElementById('step-damage-question').innerHTML = '<div class="card"><div class="success">✅ Report sent!<br><br><span style="font-size:15px;font-weight:normal">Unit ' + unit + ' — No damages<br>Confirmation sent to ' + inspectorEmail + '</span><br><br><button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button></div></div>';
+  } else {
+    btn.disabled = false;
+    btn.textContent = '✅ No Damages';
+    alert('Error: ' + (data && data.error ? data.error : 'Unknown error'));
+  }
+}
+
+function goToDamages() {
+  document.getElementById('step-damage-question').style.display = 'none';
+  document.getElementById('step-damages').style.display = 'block';
+  initRoomDropdown();
+  window.scrollTo(0, 0);
+}
+
+function initRoomDropdown() {
+  if (roomSelectTS) { roomSelectTS.destroy(); roomSelectTS = null; }
+  const sel = document.getElementById('room-select-dropdown');
+  sel.innerHTML = '<option value="">— select a room —</option>';
+  const usedRooms = Object.keys(roomData);
+  ROOMS.filter(r => !usedRooms.includes(r)).forEach(r => {
+    const o = document.createElement('option');
+    o.value = r; o.textContent = r;
+    sel.appendChild(o);
+  });
+  roomSelectTS = new TomSelect('#room-select-dropdown', {
+    placeholder: '— search or select a room —',
+    allowEmptyOption: false,
+    onChange: function(val) {
+      if (val) addRoomBlock(val);
+    }
+  });
+}
+
+function showRoomSelector() {
+  lockAllRoomBlocks();
+  const area = document.getElementById('room-selector-area');
+  area.style.display = 'block';
+  document.getElementById('room-action-btns').style.display = 'none';
+  initRoomDropdown();
+  area.scrollIntoView({ behavior: 'smooth' });
+}
+
+function lockAllRoomBlocks() {
+  Object.keys(roomData).forEach(roomName => lockRoomBlock(roomName));
+}
+
+function lockRoomBlock(roomName) {
+  const escaped = CSS.escape(roomName);
+  const block = document.getElementById('room-block-' + escaped);
+  if (!block) return;
+  block.querySelectorAll('.damage-checkbox').forEach(el => el.disabled = true);
+  block.querySelectorAll('.camera-btn').forEach(el => el.disabled = true);
+  const header = block.querySelector('.room-block-header');
+  if (header) header.style.background = '#f3f4f6';
+  const removeBtn = block.querySelector('.btn-remove');
+  if (removeBtn) removeBtn.style.display = 'none';
+  if (!block.querySelector('.locked-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'locked-badge';
+    badge.textContent = '✓ Done';
+    badge.style.cssText = 'background:#d1fae5;color:#065f46;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:bold;';
+    block.querySelector('.room-block-header').appendChild(badge);
+  }
+}
+
+function addRoomBlock(val) {
+  if (!val) val = roomSelectTS ? roomSelectTS.getValue() : document.getElementById("room-select-dropdown").value;
+  if (!val) return;
+  if (roomData[val]) return;
+  roomData[val] = {};
+  roomOrder.push(val);
+  DAMAGES.forEach(d => { roomData[val][d.name] = { checked: false, price: d.price, photos: [] }; });
+  document.querySelectorAll(".room-block").forEach(el => el.style.display = "none");
+  document.getElementById("room-selector-area").style.display = "none";
+  document.getElementById("room-action-btns").style.display = "block";
+  renderRoomBlock(val);
+  window.scrollTo(0, 0);
+}
+
+function renderRoomBlock(roomName) {
+  const container = document.getElementById('room-blocks');
+  const block = document.createElement('div');
+  block.className = 'room-block';
+  block.id = 'room-block-' + CSS.escape(roomName);
+  let rowsHTML = '';
+  DAMAGES.forEach((d, i) => {
+    const key = 'dmg-' + roomName.replace(/\s+/g, '_') + '-' + i;
+    const isOther = d.name === 'Other (see notes)';
+    rowsHTML += `
+      <div class="damage-row-wrap" id="wrap-${key}">
+        <div class="damage-row" id="row-${key}">
+          <input type="checkbox" class="damage-checkbox" id="chk-${key}" onchange="toggleDamage('${roomName}','${d.name}',this.checked,'${key}',${isOther})">
+          <label class="damage-label" for="chk-${key}">${d.name}</label>
+          <span class="damage-price" id="price-label-${key}" style="display:${isOther?'none':'inline'}">$${d.price}</span>
+          <button class="camera-btn" id="cam-${key}" onclick="triggerCamera('${key}')">📷 Photo</button>
+          <input type="file" class="hidden-file" id="file-${key}" accept="image/*" capture="environment" multiple onchange="handlePhotos('${roomName}','${d.name}','${key}',this)">
+          <span class="photo-count-badge" id="badge-${key}"></span>
+        </div>
+        <div class="damage-extra" id="extra-${key}" style="display:none">
+          ${isOther ? `<input type="text" class="damage-extra-input" id="other-desc-${key}" placeholder="Describe the damage..." oninput="updateOtherDesc('${roomName}','${d.name}','${key}',this.value)">` : ''}
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <label style="margin:0;font-size:13px;white-space:nowrap">Charge ($)</label>
+            <input type="number" class="damage-price-input" id="charge-${key}" value="${d.price}" min="0" oninput="updateCharge('${roomName}','${d.name}','${key}',this.value)">
+          </div>
+          <input type="text" class="damage-extra-input" id="comment-${key}" placeholder="Comments (optional)" style="margin-top:6px" oninput="updateComment('${roomName}','${d.name}','${key}',this.value)">
+        </div>
+      </div>`;
+  });
+  block.innerHTML = `
+    <div class="room-block-header">
+      <button class="btn-back" onclick="goBackToRoom('${roomName}')">← Back</button>
+      <span style="flex:1;text-align:center">${roomName}</span>
+      <button class="btn-remove" onclick="removeRoomBlock('${roomName}')">✕ Remove</button>
+    </div>
+    <div class="room-block-body">${rowsHTML}</div>`;
+  container.appendChild(block);
+}
+
+function toggleDamage(roomName, damageName, checked, key, isOther) {
+  if (!roomData[roomName]) return;
+  roomData[roomName][damageName].checked = checked;
+  const cam = document.getElementById('cam-' + key);
+  if (cam) cam.classList.toggle('visible', checked);
+  const extra = document.getElementById('extra-' + key);
+  if (extra) extra.style.display = checked ? 'block' : 'none';
+  const priceLabel = document.getElementById('price-label-' + key);
+  if (priceLabel && !isOther) priceLabel.style.display = checked ? 'none' : 'inline';
+}
+
+function updateCharge(roomName, damageName, key, val) {
+  if (!roomData[roomName] || !roomData[roomName][damageName]) return;
+  roomData[roomName][damageName].price = parseFloat(val) || 0;
+}
+
+function updateComment(roomName, damageName, key, val) {
+  if (!roomData[roomName] || !roomData[roomName][damageName]) return;
+  roomData[roomName][damageName].comment = val;
+}
+
+function updateOtherDesc(roomName, damageName, key, val) {
+  if (!roomData[roomName] || !roomData[roomName][damageName]) return;
+  roomData[roomName][damageName].otherDesc = val;
+}
+
+function triggerCamera(key) {
+  document.getElementById('file-' + key).click();
+}
+
+function handlePhotos(roomName, damageName, key, input) {
+  if (!roomData[roomName] || !roomData[roomName][damageName]) return;
+  const files = Array.from(input.files);
+  roomData[roomName][damageName].photos = files;
+  const badge = document.getElementById('badge-' + key);
+  if (files.length > 0) {
+    badge.textContent = '📷 ' + files.length;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+function goBackToRoom(currentRoomName) {
+  const currentIndex = roomOrder.indexOf(currentRoomName);
+  const currentBlock = document.getElementById('room-block-' + CSS.escape(currentRoomName));
+  if (currentBlock) currentBlock.style.display = 'none';
+  if (currentIndex <= 0) {
+    document.getElementById('room-selector-area').style.display = 'block';
+    document.getElementById('room-action-btns').style.display = 'none';
+    initRoomDropdown();
+    window.scrollTo(0, 0);
+    return;
+  }
+  const prevRoomName = roomOrder[currentIndex - 1];
+  const prevBlock = document.getElementById('room-block-' + CSS.escape(prevRoomName));
+  if (prevBlock) {
+    prevBlock.style.display = 'block';
+    prevBlock.querySelectorAll('.damage-checkbox').forEach(el => el.disabled = false);
+    prevBlock.querySelectorAll('.camera-btn').forEach(el => { if (el.classList.contains('visible')) el.disabled = false; });
+    const header = prevBlock.querySelector('.room-block-header');
+    if (header) header.style.background = '#f0f4ff';
+    const removeBtn = prevBlock.querySelector('.btn-remove');
+    if (removeBtn) removeBtn.style.display = 'inline-block';
+    const lockedBadge = prevBlock.querySelector('.locked-badge');
+    if (lockedBadge) lockedBadge.remove();
+  }
+  document.getElementById('room-action-btns').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function removeRoomBlock(roomName) {
+  delete roomData[roomName];
+  roomOrder = roomOrder.filter(r => r !== roomName);
+  const escaped = CSS.escape(roomName);
+  const el = document.getElementById('room-block-' + escaped);
+  if (el) el.remove();
+  if (Object.keys(roomData).length === 0) {
+    document.getElementById('room-action-btns').style.display = 'none';
+    document.getElementById('room-selector-area').style.display = 'block';
+    initRoomDropdown();
+  }
+}
+
+function goToOverview() {
+  const rooms = Object.keys(roomData);
+  if (rooms.length === 0) { document.getElementById('damages-error').textContent = 'Please add at least one room with damages.'; return; }
+  let hasAnyDamage = false;
+  rooms.forEach(r => { Object.values(roomData[r]).forEach(d => { if (d.checked) hasAnyDamage = true; }); });
+  if (!hasAnyDamage) { document.getElementById('damages-error').textContent = 'Please check at least one damage item.'; return; }
+  document.getElementById('damages-error').textContent = '';
+  let overviewHTML = '';
+  let grandTotal = 0;
+  rooms.forEach(roomName => {
+    const damages = roomData[roomName];
+    const checkedDamages = Object.entries(damages).filter(([,d]) => d.checked);
+    if (checkedDamages.length === 0) return;
+    let totalPhotos = 0;
+    let roomTotal = 0;
+    checkedDamages.forEach(([,d]) => { totalPhotos += d.photos.length; roomTotal += d.price || 0; });
+    grandTotal += roomTotal;
+    overviewHTML += `
+      <div class="overview-room">
+        <div class="overview-room-title">${roomName}</div>
+        <div class="overview-stat">Damages: <span>${checkedDamages.length}</span></div>
+        <div class="overview-stat">Photos taken: <span>${totalPhotos}</span></div>
+        <div class="overview-stat">Room total: <span>$${roomTotal.toFixed(2)}</span></div>
+        <ul style="margin-top:8px;padding-left:18px;font-size:13px;color:#4b5563">
+          ${checkedDamages.map(([name,d]) => `<li>${(name === 'Other (see notes)' && d.otherDesc) ? d.otherDesc : name} — $${d.price}${d.photos.length > 0 ? ' 📷 ' + d.photos.length : ''}${d.comment ? ' — ' + d.comment : ''}</li>`).join('')}
+        </ul>
+      </div>`;
+  });
+  document.getElementById('overview-content').innerHTML = overviewHTML;
+  document.getElementById('overview-total').textContent = 'Total: $' + grandTotal.toFixed(2);
+  document.getElementById('step-damages').style.display = 'none';
+  document.getElementById('step-overview').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function goBackToDamages() {
+  document.getElementById('step-overview').style.display = 'none';
+  document.getElementById('step-damages').style.display = 'block';
+  document.querySelectorAll('.room-block').forEach(el => el.style.display = 'none');
+  if (roomOrder.length > 0) {
+    const lastRoom = roomOrder[roomOrder.length - 1];
+    const lastBlock = document.getElementById('room-block-' + CSS.escape(lastRoom));
+    if (lastBlock) lastBlock.style.display = 'block';
+  }
+  document.getElementById('room-action-btns').style.display = roomOrder.length > 0 ? 'block' : 'none';
+  window.scrollTo(0, 0);
+}
+
+async function submitReport() {
+  const unit = document.getElementById('unit').value.trim();
+  const tenant = document.getElementById('tenant').value.trim();
+  const inspector = document.getElementById('inspector').value.trim();
+  const inspectorEmail = document.getElementById('inspector-email').value.trim();
+  const officeEmail = document.getElementById('office-email').value.trim();
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<span class="spinner"></span> Sending...';
+  btn.disabled = true;
+  const damages = [];
+  const reportNotes = document.getElementById('report-notes').value.trim();
+  for (const [roomName, dmgs] of Object.entries(roomData)) {
+    for (const [damageName, d] of Object.entries(dmgs)) {
+      if (!d.checked) continue;
+      let filenames = [];
+      for (const photo of d.photos) {
+        const formData = new FormData();
+        formData.append('photo', photo);
+        try {
+          const res = await fetch('/upload', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (data.filename) filenames.push(data.filename);
+        } catch(e) { console.error('Upload error:', e); }
+      }
+      const displayName = (damageName === 'Other (see notes)' && d.otherDesc) ? d.otherDesc : damageName;
+      const notes = d.comment || '';
+      damages.push({ room: roomName, damage: displayName, price: String(d.price), notes, filename: filenames[0] || null, filenames });
+    }
+  }
+  let res, data;
+  try {
+    res = await fetch('/send-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages, notes: reportNotes }) });
+    data = await res.json();
+  } catch(e) { data = { error: 'Could not connect to server.' }; }
+  btn.innerHTML = 'Send Report';
+  btn.disabled = false;
+  if (data && data.success) {
+    document.getElementById('step-overview').innerHTML = '<div class="success">✅ Report sent successfully!<br><br><span style="font-size:15px;font-weight:normal">Unit ' + unit + ' — ' + damages.length + ' item(s) logged<br>Confirmation sent to ' + inspectorEmail + '</span><br><br><button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button></div>';
+  } else {
+    document.getElementById('submit-error').textContent = '❌ Error: ' + (data && data.error ? data.error : 'Unknown error.');
+  }
+}
+
 function renderRoomsSettings() {
   const list = document.getElementById('rooms-settings-list');
   list.innerHTML = '';
@@ -206,27 +572,19 @@ function renderRoomsSettings() {
     list.appendChild(div);
   });
 }
-
 function deleteRoom(i) { ROOMS.splice(i, 1); renderRoomsSettings(); }
-
 function addNewRoom() {
   const name = document.getElementById('new-room-name').value.trim();
-  if (!name) { alert('Please enter a room name'); return; }
-  ROOMS.push(name);
-  document.getElementById('new-room-name').value = '';
-  renderRoomsSettings();
+  if (!name) { alert('Enter a room name'); return; }
+  ROOMS.push(name); document.getElementById('new-room-name').value = ''; renderRoomsSettings();
 }
-
 function saveRooms() {
   const updated = [];
-  ROOMS.forEach((r, i) => { const name = document.getElementById('rname-' + i).value.trim(); if (name) updated.push(name); });
-  ROOMS = updated;
-  localStorage.setItem('rooms', JSON.stringify(ROOMS));
+  ROOMS.forEach((r, i) => { const n = document.getElementById('rname-' + i).value.trim(); if (n) updated.push(n); });
+  ROOMS = updated; localStorage.setItem('rooms', JSON.stringify(ROOMS));
   document.getElementById('rooms-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Rooms saved!</p>';
   setTimeout(() => document.getElementById('rooms-result').innerHTML = '', 2000);
 }
-
-// DAMAGE SETTINGS
 function renderSettings() {
   const list = document.getElementById('settings-list');
   list.innerHTML = '';
@@ -237,271 +595,22 @@ function renderSettings() {
     list.appendChild(div);
   });
 }
-
 function deleteDamage(i) { DAMAGES.splice(i, 1); renderSettings(); }
-
 function addNewDamage() {
   const name = document.getElementById('new-damage-name').value.trim();
   const price = parseFloat(document.getElementById('new-damage-price').value) || 0;
-  if (!name) { alert('Please enter a damage name'); return; }
+  if (!name) { alert('Enter a damage name'); return; }
   DAMAGES.push({ name, price });
   document.getElementById('new-damage-name').value = '';
   document.getElementById('new-damage-price').value = '';
   renderSettings();
 }
-
 function saveDamages() {
   const updated = [];
-  DAMAGES.forEach((d, i) => { const name = document.getElementById('sname-' + i).value.trim(); const price = parseFloat(document.getElementById('sprice-' + i).value) || 0; if (name) updated.push({ name, price }); });
-  DAMAGES = updated;
-  localStorage.setItem('damages', JSON.stringify(DAMAGES));
+  DAMAGES.forEach((d, i) => { const n = document.getElementById('sname-' + i).value.trim(); const p = parseFloat(document.getElementById('sprice-' + i).value) || 0; if (n) updated.push({ name: n, price: p }); });
+  DAMAGES = updated; localStorage.setItem('damages', JSON.stringify(DAMAGES));
   document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Changes saved!</p>';
   setTimeout(() => document.getElementById('settings-result').innerHTML = '', 2000);
-}
-
-function importExcel(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      const imported = [];
-      for (const row of rows) {
-        const name = row[0] ? String(row[0]).trim() : '';
-        const price = parseFloat(row[1]) || 0;
-        if (name && name.toLowerCase() !== 'damage' && name.toLowerCase() !== 'name') imported.push({ name, price });
-      }
-      if (imported.length === 0) { alert('No data found in file.'); return; }
-      DAMAGES = imported;
-      renderSettings();
-      document.getElementById('settings-result').innerHTML = '<p style="color:#065f46;margin-top:10px">✅ Imported ' + imported.length + ' items!</p>';
-      setTimeout(() => document.getElementById('settings-result').innerHTML = '', 3000);
-    } catch (err) { alert('Error reading file: ' + err.message); }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-// ADD DAMAGE ITEM
-function addDamage() {
-  damageCount++;
-  const id = damageCount;
-
-  const div = document.createElement('div');
-  div.className = 'damage-item';
-  div.id = 'damage-' + id;
-  div.innerHTML = `
-    <button class="btn btn-remove" onclick="removeDamage(${id})">✕ Remove</button>
-    <label>Room</label>
-    <select id="room-${id}"></select>
-    <div id="custom-room-wrap-${id}" style="display:none;margin-top:8px">
-      <input type="text" id="custom-room-${id}" placeholder="Enter room name">
-    </div>
-    <label>Damage Type</label>
-    <select id="type-${id}"></select>
-    <div id="custom-type-wrap-${id}" style="display:none;margin-top:8px">
-      <input type="text" id="custom-type-${id}" placeholder="Enter damage description">
-    </div>
-    <label>Charge ($)</label>
-    <input type="number" id="price-${id}" value="0" onchange="updateTotal(); checkPhotoRequired(${id})">
-    <label>Photo</label>
-    <p class="photo-required" id="photo-required-${id}" style="display:none">📷 Photo required for charges over $0</p>
-    <input type="file" id="photo-${id}" accept="image/*" capture="environment" onchange="previewPhoto(${id}); checkPhotoRequired(${id})">
-    <div id="preview-${id}"></div>
-    <div class="override-check" id="override-wrap-${id}" style="display:none">
-      <input type="checkbox" id="override-${id}" onchange="checkPhotoRequired(${id})">
-      <label for="override-${id}" style="margin:0;font-weight:normal">Override — submit without photo</label>
-    </div>
-    <label>Notes (optional)</label>
-    <textarea id="notes-${id}" placeholder="Describe the damage..."></textarea>
-  `;
-  document.getElementById('damages-list').appendChild(div);
-
-  // Room searchable dropdown
-  const roomSelect = new TomSelect('#room-' + id, {
-    options: [...ROOMS.map(r => ({ value: r, text: r })), { value: '__other__', text: 'Other (enter custom room)' }],
-    items: [ROOMS[0]],
-    onChange: function(val) {
-      document.getElementById('custom-room-wrap-' + id).style.display = val === '__other__' ? 'block' : 'none';
-    }
-  });
-
-  // Damage type searchable dropdown
-  const typeSelect = new TomSelect('#type-' + id, {
-    options: [...DAMAGES.map(d => ({ value: d.name, text: d.name + ' — $' + d.price, price: d.price })), { value: '__other__', text: 'Other (enter custom damage)', price: 0 }],
-    items: [DAMAGES[0] ? DAMAGES[0].name : ''],
-    onChange: function(val) {
-      const opt = this.options[val];
-      if (val === '__other__') {
-        document.getElementById('custom-type-wrap-' + id).style.display = 'block';
-        document.getElementById('price-' + id).value = 0;
-      } else {
-        document.getElementById('custom-type-wrap-' + id).style.display = 'none';
-        if (opt) document.getElementById('price-' + id).value = opt.price || 0;
-      }
-      updateTotal();
-      checkPhotoRequired(id);
-    }
-  });
-
-  tomSelects[id] = { room: roomSelect, type: typeSelect };
-  if (DAMAGES[0]) document.getElementById('price-' + id).value = DAMAGES[0].price;
-  updateTotal();
-  checkPhotoRequired(id);
-}
-
-function checkPhotoRequired(id) {
-  const price = parseFloat(document.getElementById('price-' + id).value) || 0;
-  const hasPhoto = document.getElementById('photo-' + id).files.length > 0;
-  const overrideChecked = document.getElementById('override-' + id).checked;
-  const reqMsg = document.getElementById('photo-required-' + id);
-  const overrideWrap = document.getElementById('override-wrap-' + id);
-
-  if (price > 0 && !hasPhoto) {
-    reqMsg.style.display = 'block';
-    overrideWrap.style.display = 'flex';
-  } else {
-    reqMsg.style.display = 'none';
-    if (hasPhoto) overrideWrap.style.display = 'none';
-  }
-}
-
-function removeDamage(id) {
-  if (tomSelects[id]) { tomSelects[id].room.destroy(); tomSelects[id].type.destroy(); delete tomSelects[id]; }
-  document.getElementById('damage-' + id).remove();
-  updateTotal();
-}
-
-function updateTotal() {
-  document.getElementById('total-display').textContent = 'Total: $' + calcTotal().toFixed(2);
-}
-
-function previewPhoto(id) {
-  const file = document.getElementById('photo-' + id).files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => { document.getElementById('preview-' + id).innerHTML = '<img src="' + e.target.result + '" class="photo-preview">'; };
-  reader.readAsDataURL(file);
-  checkPhotoRequired(id);
-}
-
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validateEmails(str) {
-  const emails = str.split(',').map(e => e.trim()).filter(e => e);
-  if (emails.length === 0) return false;
-  return emails.every(e => validateEmail(e));
-}
-
-async function submitReport() {
-  const unit = document.getElementById('unit').value.trim();
-  const tenant = document.getElementById('tenant').value.trim();
-  const inspector = document.getElementById('inspector').value.trim();
-  const inspectorEmail = document.getElementById('inspector-email').value.trim();
-  const officeEmail = document.getElementById('office-email').value.trim();
-
-  if (!unit || !inspector || !inspectorEmail || !officeEmail) {
-    document.getElementById('result').innerHTML = '<p class="error-msg">Please fill in all required fields (marked with *).</p>';
-    return;
-  }
-
-  if (!validateEmail(inspectorEmail)) {
-    document.getElementById('result').innerHTML = '<p class="error-msg">Inspector email is not a valid email address.</p>';
-    return;
-  }
-
-  if (!validateEmails(officeEmail)) {
-    document.getElementById('result').innerHTML = '<p class="error-msg">One or more office email addresses are not valid.</p>';
-    return;
-  }
-
-  const items = document.querySelectorAll('[id^="damage-"]');
-
-  // Check photo requirements
-  if (!noDamage) {
-    for (const item of items) {
-      const id = item.id.split('-')[1];
-      const price = parseFloat(document.getElementById('price-' + id).value) || 0;
-      const hasPhoto = document.getElementById('photo-' + id).files.length > 0;
-      const overrideChecked = document.getElementById('override-' + id).checked;
-      if (price > 0 && !hasPhoto && !overrideChecked) {
-        document.getElementById('result').innerHTML = '<p class="error-msg">Please add a photo for all damage items with a charge, or check the override box.</p>';
-        item.scrollIntoView({ behavior: 'smooth' });
-        return;
-      }
-    }
-  }
-
-  const btn = document.getElementById('submit-btn');
-  btn.innerHTML = '<span class="spinner"></span> Sending...';
-  btn.disabled = true;
-  document.getElementById('result').innerHTML = '';
-
-  const damages = [];
-
-  if (noDamage) {
-    damages.push({ room: 'N/A', damage: 'No damages found', price: '0', notes: '', filename: null });
-  } else {
-    for (const item of items) {
-      const id = item.id.split('-')[1];
-      const photoFile = document.getElementById('photo-' + id).files[0];
-      let filename = null;
-
-      if (photoFile) {
-        const formData = new FormData();
-        formData.append('photo', photoFile);
-        try {
-          const res = await fetch('/upload', { method: 'POST', body: formData });
-          const data = await res.json();
-          filename = data.filename;
-        } catch(e) { console.error('Upload error:', e); }
-      }
-
-      const roomVal = tomSelects[id].room.getValue();
-      const typeVal = tomSelects[id].type.getValue();
-      const room = roomVal === '__other__' ? document.getElementById('custom-room-' + id).value.trim() || 'Other' : roomVal;
-      const damage = typeVal === '__other__' ? document.getElementById('custom-type-' + id).value.trim() || 'Other' : typeVal;
-
-      damages.push({
-        room,
-        damage,
-        price: document.getElementById('price-' + id).value,
-        notes: document.getElementById('notes-' + id).value,
-        filename
-      });
-    }
-  }
-
-  let res, data;
-  try {
-    res = await fetch('/send-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ unit, tenant, inspector, inspectorEmail, officeEmail, damages })
-    });
-    data = await res.json();
-  } catch(e) {
-    data = { error: 'Could not connect to server. Please check your internet connection and try again.' };
-  }
-
-  btn.innerHTML = 'Send Report';
-  btn.disabled = false;
-
-  if (data && data.success) {
-    document.getElementById('app').innerHTML = `
-      <div class="success">
-        ✅ Report sent successfully!<br><br>
-        <span style="font-size:15px;font-weight:normal">Unit ${unit} — ${damages.length} item(s) logged<br>Confirmation sent to ${inspectorEmail}</span><br><br>
-        <button class="btn btn-primary" style="width:auto;padding:12px 30px" onclick="location.reload()">Start New Inspection</button>
-      </div>`;
-  } else {
-    document.getElementById('result').innerHTML = '<p class="error-msg">❌ Error: ' + (data && data.error ? data.error : 'Unknown error. Please try again.') + '</p>';
-  }
 }
 </script>
 </body>
